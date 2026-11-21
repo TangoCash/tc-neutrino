@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<webtvs name="[WebTV]">
+	<!-- <webtv title="Title" urlkey="0" url="http://url.to/your/favorite/webtv.m3u8" description="Description" genre="Genre" /> -->
+	<webtv title="Axinom CMAF cbcs" url="cmaf" description="Axinom test vector v10 H264 single-key cbcs" genre="Test" script="axinom.lua" />
+	<webtv title="Axinom DASH cenc" url="dash" description="Axinom test vector v10 H264 single-key cenc" genre="Test" script="axinom.lua" />
+	<webtv title="PBS mux_bbb" url="mux_bbb" description="pbs/test-streams HLS (clear)" genre="Test" script="pbs.lua" />
+	<webtv title="PBS bars_hevc_avc" url="bars_hevc_avc" description="pbs/test-streams HLS (clear)" genre="Test" script="pbs.lua" />
+	<webtv title="PBS bars_cmaf_iframes" url="bars_cmaf_iframes" description="pbs/test-streams HLS (clear)" genre="Test" script="pbs.lua" />
+	<webtv title="PBS muxed_avc" url="muxed_avc" description="pbs/test-streams HLS (clear)" genre="Test" script="pbs.lua" />
+	<webtv title="PBS muxed_hevc" url="muxed_hevc" description="pbs/test-streams HLS (clear)" genre="Test" script="pbs.lua" />
+	<webtv title="PBS muxed_hevc_apple" url="muxed_hevc_apple" description="pbs/test-streams HLS (clear)" genre="Test" script="pbs.lua" />
+	<webtv title="PBS angel_one_wv" url="angel_one_wv" description="pbs/test-streams HLS (shaka)" genre="Test" script="pbs.lua" />
+	<webtv title="PBS muxed_avc_cbcs" url="muxed_avc_cbcs" description="pbs/test-streams HLS (axinom)" genre="Test" script="pbs.lua" />
+	<webtv title="PBS muxed_avc_apple_cbcs" url="muxed_avc_apple_cbcs" description="pbs/test-streams HLS (axinom)" genre="Test" script="pbs.lua" />
+	<webtv title="PBS drm_avc" url="drm_avc" description="pbs/test-streams HLS (axinom)" genre="Test" script="pbs.lua" />
+	<webtv title="PBS drm_hevc_avc" url="drm_hevc_avc" description="pbs/test-streams HLS (axinom)" genre="Test" script="pbs.lua" />
+	<webtv title="PBS drm4k_hevc_avc" url="drm4k_hevc_avc" description="pbs/test-streams HLS (axinom)" genre="Test" script="pbs.lua" />
+</webtvs>
