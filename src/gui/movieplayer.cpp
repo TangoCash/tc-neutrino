@@ -1656,6 +1656,7 @@ bool CMoviePlayerGui::SelectFile()
 	file_name.clear();
 	cookie_header.clear();
 	decryption_keys.clear();
+	drmhandler_parameters.clear();
 	//reinit Path_local for webif reloadsetup
 	Path_local = "/";
 	if (is_audio_playing)
@@ -2048,6 +2049,7 @@ bool CMoviePlayerGui::StartWebtv(void)
 	if (playback) {
 #if HAVE_ARM_HARDWARE || HAVE_MIPS_HARDWARE
 		playback->SetDecryptionKeys(decryption_keys);
+		playback->SetDrmHandlerParameters(drmhandler_parameters);
 		/* HLS/DASH: best variant up to the WebTV resolution setting (a width) */
 		playback->SetMaxVideoResolution(g_settings.livestreamResolution);
 #endif
@@ -2322,6 +2324,21 @@ static std::string jsonDecryptionKeys(const Json::Value &v)
 	return keys;
 }
 
+/* "drmhandler_parameters" of a livestream script: JSON string (see container_drmhandler.h),
+ * or an inline JSON object */
+static std::string jsonDrmHandlerParameters(const Json::Value &v)
+{
+	if (!v.isString() && !v.isObject())
+		return "";
+	if (v.isString())
+		return v.asString();
+	Json::FastWriter writer;
+	std::string out = writer.write(v);
+	while (!out.empty() && (out[out.size()-1] == '\n' || out[out.size()-1] == '\r'))
+		out.erase(out.size()-1);
+	return out;
+}
+
 bool CMoviePlayerGui::luaGetUrl(const std::string &script, const std::string &file, std::vector<livestream_info_t> &streamList, std::string *error_string, const std::string &display_name)
 {
 	std::string hint_text = g_Locale->getText(LOCALE_LIVESTREAM_READ_DATA);
@@ -2386,7 +2403,7 @@ bool CMoviePlayerGui::luaGetUrl(const std::string &script, const std::string &fi
 	bool haveurl = false;
 	if ( !root.isObject() ) {
 		for (Json::Value::iterator it = root.begin(); it != root.end(); ++it) {
-			info.url=""; info.url2=""; info.name=""; info.header=""; info.decryption_keys=""; info.bandwidth = 1; info.resolution=""; info.res1 = 1;
+			info.url=""; info.url2=""; info.name=""; info.header=""; info.decryption_keys=""; info.drmhandler_parameters=""; info.bandwidth = 1; info.resolution=""; info.res1 = 1;
 			tmp = "0";
 			Json::Value object_it = *it;
 			for (Json::Value::iterator iti = object_it.begin(); iti != object_it.end(); iti++) {
@@ -2405,6 +2422,8 @@ bool CMoviePlayerGui::luaGetUrl(const std::string &script, const std::string &fi
 				}
 				else if (name=="decryption_keys" || name=="license_key" || name=="kid_key") {
 					info.decryption_keys = jsonDecryptionKeys(*iti);
+				} else if (name=="drmhandler_parameters") {
+					info.drmhandler_parameters = jsonDrmHandlerParameters(*iti);
 				}
 				else if (name=="band") {
 					info.bandwidth  = atoi((*iti).asString().c_str());
@@ -2424,7 +2443,7 @@ bool CMoviePlayerGui::luaGetUrl(const std::string &script, const std::string &fi
 	}
 	if (root.isObject()) {
 		for (Json::Value::iterator it = root.begin(); it != root.end(); ++it) {
-			info.url=""; info.url2=""; info.name=""; info.header=""; info.decryption_keys=""; info.bandwidth = 1; info.resolution=""; info.res1 = 1;
+			info.url=""; info.url2=""; info.name=""; info.header=""; info.decryption_keys=""; info.drmhandler_parameters=""; info.bandwidth = 1; info.resolution=""; info.res1 = 1;
 			tmp = "0";
 			std::string name = it.name();
 			if (name=="url") {
@@ -2439,6 +2458,8 @@ bool CMoviePlayerGui::luaGetUrl(const std::string &script, const std::string &fi
 					info.header = (*it).asString();
 			} else if (name=="decryption_keys" || name=="license_key" || name=="kid_key") {
 				info.decryption_keys = jsonDecryptionKeys(*it);
+			} else if (name=="drmhandler_parameters") {
+				info.drmhandler_parameters = jsonDrmHandlerParameters(*it);
 			} else if (name=="band") {
 				info.bandwidth  = atoi((*it).asString().c_str());
 			} else if (name=="res1") {
@@ -2521,7 +2542,7 @@ bool CMoviePlayerGui::selectLivestream(std::vector<livestream_info_t> &streamLis
 	return false;
 }
 
-bool CMoviePlayerGui::getLiveUrlDetailed(const std::string &url, const std::string &script, std::string &realUrl, std::string &_pretty_name, std::string &info1, std::string &info2, std::string &header, std::string &url2, webtv_error_reason_t *failure_reason, std::string *failure_host, std::string *failure_message, std::string *keys_out)
+bool CMoviePlayerGui::getLiveUrlDetailed(const std::string &url, const std::string &script, std::string &realUrl, std::string &_pretty_name, std::string &info1, std::string &info2, std::string &header, std::string &url2, webtv_error_reason_t *failure_reason, std::string *failure_host, std::string *failure_message, std::string *keys_out, std::string *drmhandler_params_out)
 {
 	std::vector<livestream_info_t> liveStreamList;
 	livestream_info_t info;
@@ -2626,6 +2647,9 @@ bool CMoviePlayerGui::getLiveUrlDetailed(const std::string &url, const std::stri
 	}
 	if (keys_out && !info.decryption_keys.empty()) {
 		*keys_out = info.decryption_keys;
+	}
+	if (drmhandler_params_out && !info.drmhandler_parameters.empty()) {
+		*drmhandler_params_out = info.drmhandler_parameters;
 	}
 
 #if 0
@@ -2737,8 +2761,9 @@ bool CMoviePlayerGui::PlayBackgroundStart(const std::string &file, const std::st
 	cookie_header.clear();
 	second_file_name.clear();
 	std::string _decryption_keys;
+	std::string _drmhandler_parameters;
 	if (!getLiveUrlDetailed(file, script, realUrl, _pretty_name, livestreamInfo1, livestreamInfo2, cookie_header, Url2,
-		&liveurl_failure_reason, &liveurl_failure_host, &liveurl_failure_message, &_decryption_keys)) {
+		&liveurl_failure_reason, &liveurl_failure_host, &liveurl_failure_message, &_decryption_keys, &_drmhandler_parameters)) {
 		if (handleStaleWebtvStart(chan, request_generation, "resolve_failed"))
 			return true;
 		mutex.lock();
@@ -2777,6 +2802,7 @@ bool CMoviePlayerGui::PlayBackgroundStart(const std::string &file, const std::st
 	instance_bg->pretty_name = _pretty_name;
 	instance_bg->cookie_header = cookie_header;
 	instance_bg->decryption_keys = _decryption_keys;
+	instance_bg->drmhandler_parameters = _drmhandler_parameters;
 
 	instance_bg->movie_info.epgTitle = name;
 	instance_bg->movie_info.channelName = realUrl;
@@ -3104,6 +3130,7 @@ bool CMoviePlayerGui::PlayFileStart(void)
 #if HAVE_ARM_HARDWARE || HAVE_MIPS_HARDWARE
 	if (playback) {
 		playback->SetDecryptionKeys(decryption_keys);
+		playback->SetDrmHandlerParameters(drmhandler_parameters);
 		/* HLS/DASH: best variant up to the WebTV resolution setting (a width) */
 		playback->SetMaxVideoResolution(g_settings.livestreamResolution);
 	}
@@ -4108,12 +4135,27 @@ void CMoviePlayerGui::addAudioFormat(int count, std::string &apidtitle, bool& en
 	}
 }
 
+/* the audio track the player actually plays (it may pick e.g. the best rendition
+ * of an adaptive stream itself), falling back to the first one */
+unsigned short CMoviePlayerGui::playerAudioPid()
+{
+	int cur = playback->GetAPid();
+	for (unsigned int i = 0; i < numpida; i++) {
+		if (apids[i] == cur) {
+			currentac3 = ac3flags[i];
+			return apids[i];
+		}
+	}
+	currentac3 = numpida ? ac3flags[0] : 0;
+	return numpida ? apids[0] : 0;
+}
+
 void CMoviePlayerGui::getCurrentAudioName(bool file_player, std::string &audioname)
 {
 	if (file_player && !numpida) {
 		playback->FindAllPids(apids, ac3flags, &numpida, language);
 		if (numpida)
-			currentapid = apids[0];
+			currentapid = playerAudioPid();
 	}
 	bool dumm = true;
 	for (unsigned int count = 0; count < numpida; count++) {
@@ -4154,7 +4196,7 @@ void CMoviePlayerGui::selectAudioPid()
 	if (is_file_player && !numpida) {
 		playback->FindAllPids(apids, ac3flags, &numpida, language);
 		if (numpida)
-			currentapid = apids[0];
+			currentapid = playerAudioPid();
 	}
 
 	unsigned int count = 0;
