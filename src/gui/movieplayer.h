@@ -390,7 +390,8 @@ class CMoviePlayerGui : public CMenuTarget
 	void moveTimeshift() { timeshift_to_record = true; }
 	int file_prozent;
 	static cPlayback *getPlayback();
-	void SetFile(std::string &name, std::string &file, std::string info1="", std::string info2="", std::string file2="") { pretty_name = name; file_name = file; info_1 = info1; info_2 = info2; second_file_name = file2; }
+	/* drmparams: drmhandler parameters (JSON object, see container_drmhandler.h) for this play only */
+	void SetFile(std::string &name, std::string &file, std::string info1="", std::string info2="", std::string file2="", std::string drmparams="") { pretty_name = name; file_name = file; info_1 = info1; info_2 = info2; second_file_name = file2; drmhandler_parameters = drmparams; }
 	bool PlayBackgroundStart(const std::string &file, const std::string &name, t_channel_id chan, const std::string &script="");
 	void playRecording(const std::string &ts);
 	/* For a message a loop opened inside the player took instead of it: ends the playback and

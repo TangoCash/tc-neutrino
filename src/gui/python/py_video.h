@@ -7,6 +7,7 @@
  *	v = video.new()
  *	v.zapitStopPlayBack()
  *	key = v.PlayFile("title", "/tmp/movie.ts")
+ *	key = v.PlayFile("title", url, drmhandler_parameters={"license_url": ..., "wv_device": ...})
  *	v.channelRezap()
  *
  * setInfoFunc takes a callable where the Lua binding takes the name of one

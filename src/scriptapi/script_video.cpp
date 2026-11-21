@@ -35,7 +35,8 @@
 
 int ScriptVideo::playFile(bool singlePlay, const std::string &title, const std::string &file,
 			  const std::string &info1, const std::string &info2,
-			  const std::string &file2, PlayHook *hook)
+			  const std::string &file2, PlayHook *hook,
+			  const std::string &drmParams)
 {
 	CMoviePlayerGui &player = CMoviePlayerGui::getInstance();
 
@@ -48,7 +49,7 @@ int ScriptVideo::playFile(bool singlePlay, const std::string &title, const std::
 
 	if (hook)
 		hook->infoFunc(true);
-	player.SetFile(name, fname, info1, info2, file2);
+	player.SetFile(name, fname, info1, info2, file2, drmParams);
 	player.exec(NULL, "http_lua");
 	if (hook)
 		hook->infoFunc(false);

@@ -218,13 +218,48 @@ class CPyPlayHook : public ScriptVideo::PlayHook
 		}
 };
 
-/* v.PlayFile(title, file, info1="", info2="", file2=""), answering the key
- * the play ended on, as the Lua binding answers. */
+/* drmhandler parameters as the player takes them: a str is taken as it
+ * stands, a dict is written out with json.dumps, None is none. */
+static bool drmParamsOf(PyObject *o, std::string &out)
+{
+	out.clear();
+	if (o == NULL || o == Py_None)
+		return true;
+	if (PyUnicode_Check(o))
+	{
+		const char *s = PyUnicode_AsUTF8(o);
+		if (s == NULL)
+			return false;
+		out = s;
+		return true;
+	}
+	if (!PyDict_Check(o))
+	{
+		PyErr_SetString(PyExc_TypeError, "drmhandler_parameters must be a str, a dict or None");
+		return false;
+	}
+	PyObject *json = PyImport_ImportModule("json");
+	if (json == NULL)
+		return false;
+	PyObject *dumped = PyObject_CallMethod(json, "dumps", "O", o);
+	Py_DECREF(json);
+	if (dumped == NULL)
+		return false;
+	const char *s = PyUnicode_AsUTF8(dumped);
+	if (s != NULL)
+		out = s;
+	Py_DECREF(dumped);
+	return s != NULL;
+}
+
+/* v.PlayFile(title, file, info1="", info2="", file2="", drmhandler_parameters=None),
+ * answering the key the play ended on, as the Lua binding answers. */
 PyObject *CPythonInstVideo::PlayFile(PyObject *self, PyObject *args, PyObject *kwds)
 {
-	static const char *kwlist[] = { "title", "file", "info1", "info2", "file2", NULL };
+	static const char *kwlist[] = { "title", "file", "info1", "info2", "file2", "drmhandler_parameters", NULL };
 	const char *p_title = "", *p_file = "", *p_info1 = "", *p_info2 = "", *p_file2 = "";
-	std::string title, file, info1, info2, file2;
+	PyObject *p_drm = NULL;
+	std::string title, file, info1, info2, file2, drmparams;
 	CPyVideo *D = videoOf(self);
 
 	if (D == NULL)
@@ -236,15 +271,17 @@ PyObject *CPythonInstVideo::PlayFile(PyObject *self, PyObject *args, PyObject *k
 	 * and the strings are made from it: parsed straight into a std::string,
 	 * the pointer lands where the string keeps its own data and the string's
 	 * destructor then frees the argument's buffer. */
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss|sss", (char **)kwlist, &p_title, &p_file, &p_info1, &p_info2, &p_file2))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss|sssO", (char **)kwlist, &p_title, &p_file, &p_info1, &p_info2, &p_file2, &p_drm))
 		return NULL;
 	title = p_title, file = p_file, info1 = p_info1, info2 = p_info2, file2 = p_file2;
+	if (!drmParamsOf(p_drm, drmparams))
+		return NULL;
 
 	printf("CPythonInstVideo::%s: title %s file %s\n", __func__, title.c_str(), file.c_str());
 
 	bool haveFunc = (D->infoFunc != NULL && D->infoFunc != Py_None);
 	CPyPlayHook hook((PyObject *)self, haveFunc);
-	int ret = ScriptVideo::playFile(D->singlePlay, title, file, info1, info2, file2, &hook);
+	int ret = ScriptVideo::playFile(D->singlePlay, title, file, info1, info2, file2, &hook, drmparams);
 	if (D->infoFunc != NULL && D->infoFunc != Py_None)
 		Py_CLEAR(D->infoFunc);
 

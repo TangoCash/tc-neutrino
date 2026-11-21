@@ -43,10 +43,13 @@ class ScriptVideo
 		 * on. Unless the script asked for a single play, the player is
 		 * marked as blocked from a plugin first, so that the box is not
 		 * restored between two plays; restoreAfterScript() takes that back.
-		 * The hook may be NULL. */
+		 * The hook may be NULL. drmParams are the drmhandler parameters of
+		 * this play (a JSON object, see container_drmhandler.h), empty for
+		 * none. */
 		static int playFile(bool singlePlay, const std::string &title, const std::string &file,
 				    const std::string &info1, const std::string &info2,
-				    const std::string &file2, PlayHook *hook);
+				    const std::string &file2, PlayHook *hook,
+				    const std::string &drmParams = "");
 
 		/* What both bindings do when a script ends: where a play of it left
 		 * the player blocked, the block is taken off and the box restored.

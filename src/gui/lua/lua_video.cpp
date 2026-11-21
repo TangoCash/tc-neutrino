@@ -192,6 +192,11 @@ int CLuaInstVideo::PlayFile(lua_State *L)
 		printf("CLuaInstVideo::%s: argument 4 %s\n", __func__, errmsg);
 			return 0;
 	}
+	/* argument 6: drmhandler parameters, a JSON object as string; nil for none */
+	if(numargs > 6 && !lua_isnil(L,7) && !lua_isstring(L,7)){
+		printf("CLuaInstVideo::%s: argument 6 %s\n", __func__, errmsg);
+			return 0;
+	}
 
 	bool sp = false;
 	if (luaL_testudata(L, 1, LUA_CLASSNAME) == NULL)
@@ -202,6 +207,7 @@ int CLuaInstVideo::PlayFile(lua_State *L)
 	const char *info2 = "";
 	const char *fname;
 	const char *fname2 = "";
+	const char *drmparams = "";
 
 	title = luaL_checkstring(L, 2);
 	fname = luaL_checkstring(L, 3);
@@ -211,9 +217,11 @@ int CLuaInstVideo::PlayFile(lua_State *L)
 		info2 = luaL_checkstring(L, 5);
 	if (numargs > 5)
 		fname2 = luaL_checkstring(L, 6);
+	if (numargs > 6 && !lua_isnil(L, 7))
+		drmparams = luaL_checkstring(L, 7);
 	printf("CLuaInstVideo::%s: title %s file %s\n", __func__, title, fname);
 	CLuaPlayHook hook(L, D != NULL && !D->infoFunc.empty());
-	int ret = ScriptVideo::playFile(sp, title, fname, info1, info2, fname2, &hook);
+	int ret = ScriptVideo::playFile(sp, title, fname, info1, info2, fname2, &hook, drmparams);
 	if (D != NULL && !D->infoFunc.empty())
 		D->infoFunc = "";
 	lua_pushinteger(L, ret);
