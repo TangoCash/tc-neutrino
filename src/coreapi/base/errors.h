@@ -394,6 +394,8 @@ enum class ErrorCode
 	SettingsSectionNotAllowed,
 	// A settings section no AI client may ever write.
 	SettingsSectionDenied,
+	// Asked for by another machine where only the box itself may ask.
+	NotFromThisBox,
 
 	// A command this layer ran, and what became of it.
 	CommandNotStarted,
@@ -595,6 +597,7 @@ inline const char *codeString(ErrorCode c)
 		case ErrorCode::PluginNotAllowed: return "plugin-not-allowed";
 		case ErrorCode::SettingsSectionNotAllowed: return "settings-section-not-allowed";
 		case ErrorCode::SettingsSectionDenied: return "settings-section-denied";
+		case ErrorCode::NotFromThisBox: return "not-from-this-box";
 		case ErrorCode::CommandNotStarted: return "command-not-started";
 		case ErrorCode::CommandOutputUnreadable: return "command-output-unreadable";
 		case ErrorCode::Timeout: return "timeout";

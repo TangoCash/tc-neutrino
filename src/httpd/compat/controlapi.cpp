@@ -60,7 +60,6 @@ extern CPictureViewer *g_PicViewer;
 #include "httpd/compat/standby.h"
 #include "httpd/compat/neutrinoapi.h"
 #include "httpd/compat/controlapi.h"
-#include "httpd/compat/hbbtvplayer.h"
 #include <hardware/video.h>
 #include <zapit/femanager.h>
 
@@ -2440,50 +2439,6 @@ void CControlAPI::GlcdScreenshotCGI(CyhookHandler *hh)
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-// media of an HbbTV application, played on the decoders below the browser:
-// zapto?hbbtvplay&url=<url-encoded>&start=<ms>, hbbtvpause, hbbtvresume,
-// hbbtvseek&pos=<ms>, hbbtvstop, hbbtvwindow&x=&y=&w=&h=&pw=&ph=,
-// hbbtvstatus -> "<state> <position ms> <duration ms>"
-void CControlAPI::HbbtvPlayerCGI(CyhookHandler *hh)
-{
-	CHbbtvPlayer &player = CHbbtvPlayer::instance();
-	const std::string &cmd = hh->ParamList["1"];
-	if (cmd == "hbbtvplay")
-	{
-		std::string url = decodeString(hh->ParamList["url"]);
-		if (url.empty())
-		{
-			hh->SendError();
-			return;
-		}
-		player.play(url, atoi(hh->ParamList["start"].c_str()));
-	}
-	else if (cmd == "hbbtvpause")
-		player.pause();
-	else if (cmd == "hbbtvresume")
-		player.resume();
-	else if (cmd == "hbbtvseek")
-		player.seek(atoi(hh->ParamList["pos"].c_str()));
-	else if (cmd == "hbbtvstop")
-		player.stop();
-	else if (cmd == "hbbtvwindow")
-		player.window(atoi(hh->ParamList["x"].c_str()), atoi(hh->ParamList["y"].c_str()),
-			      atoi(hh->ParamList["w"].c_str()), atoi(hh->ParamList["h"].c_str()),
-			      atoi(hh->ParamList["pw"].c_str()), atoi(hh->ParamList["ph"].c_str()));
-	else if (cmd == "hbbtvstatus")
-	{
-		hh->Write(player.status());
-		return;
-	}
-	else
-	{
-		hh->SendError();
-		return;
-	}
-	hh->SendOk();
-}
-
-//-----------------------------------------------------------------------------
 void CControlAPI::ZaptoCGI(CyhookHandler *hh)
 {
 	if (hh->ParamList.empty())
@@ -2517,8 +2472,6 @@ void CControlAPI::ZaptoCGI(CyhookHandler *hh)
 		}
 		else if (hh->ParamList["1"] == "statusplayback")
 			hh->Write((char *) (NeutrinoAPI->Zapit->isPlayBackActive() ? "1" : "0"));
-		else if (hh->ParamList["1"].compare(0, 5, "hbbtv") == 0)
-			HbbtvPlayerCGI(hh);
 		else if (hh->ParamList["1"] == "stopsectionsd")
 		{
 			NeutrinoAPI->Sectionsd->setPauseScanning(true);

@@ -41,6 +41,7 @@ libcoreapi_a_SOURCES = \
 	box/tunersource_real.cpp \
 	box/inputdevice_real.cpp \
 	box/screenshotsource_real.cpp \
+	box/hbbtvmedia_real.cpp \
 	box/displaypicture.cpp \
 	box/logosource_real.cpp \
 	box/pluginsource_real.cpp \
@@ -84,6 +85,7 @@ libcoreapi_a_SOURCES = \
 	archive.cpp \
 	library.cpp \
 	playback.cpp \
+	hbbtv.cpp \
 	osd.cpp \
 	settings/settings.cpp \
 	settings/apply.cpp \

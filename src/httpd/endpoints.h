@@ -240,6 +240,9 @@ extern const RouteTable recordingsTable;
 // What the television shows.
 extern const RouteTable playbackTable;
 
+// The media of the HbbTV browser on the box.
+extern const RouteTable hbbtvTable;
+
 } // namespace httpd
 
 #endif

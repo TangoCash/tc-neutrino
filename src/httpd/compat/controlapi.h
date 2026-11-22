@@ -103,7 +103,6 @@ private:
 	void ScreenshotCGI(CyhookHandler *hh);
 	void GlcdScreenshotCGI(CyhookHandler *hh);
 	void ZaptoCGI(CyhookHandler *hh);
-	void HbbtvPlayerCGI(CyhookHandler *hh);
 	void StartPluginCGI(CyhookHandler *hh);
 	void LCDAction(CyhookHandler *hh);
 	void YWebCGI(CyhookHandler *hh);

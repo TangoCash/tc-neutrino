@@ -91,6 +91,7 @@ const RouteTable *const kTables[] = {
 	&webtvTable,
 	&recordingsTable,
 	&playbackTable,
+	&hbbtvTable,
 	&openapi::openapiTable,
 #ifdef ENABLE_MCP
 	&oauth::oauthTable,

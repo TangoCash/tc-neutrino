@@ -3376,6 +3376,7 @@ TIMER_START();
 	CRCLock::getInstance();
 	coreapi::installRealInputDevice();
 	coreapi::installRealScreenshotSource();
+	coreapi::installRealHbbtvMedia();
 	coreapi::installRealLogoSource();
 	coreapi::installRealPluginSource();
 	coreapi::installRealRecordingSource();

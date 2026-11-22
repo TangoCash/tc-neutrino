@@ -705,6 +705,42 @@ void setScreenshotSource(ScreenshotSource *s);
 // Binds the accessors above to the box's own screen and display.
 void installRealScreenshotSource();
 
+/* The media of an HbbTV application. The browser draws the page on a plane
+   of its own above the picture and hands the streams of its <video> elements
+   here: the box plays them on its own decoders below the page, without a
+   screen of its own, and the browser drives that and asks where it stands.
+   Here and not in the browser, because the GL driver of the box crashes when
+   one process draws with it and uses a decoder at once. */
+struct HbbtvMediaState
+{
+	// idle, starting, playing, paused, ended or error
+	std::string state;
+	int position_ms;
+	int duration_ms;
+};
+
+struct HbbtvMedia
+{
+	virtual ~HbbtvMedia() {}
+	// Stops live television and what played before; opening the stream goes
+	// on in the background and status() says how it went.
+	virtual Status play(const std::string &url, int start_ms) = 0;
+	virtual void pause() = 0;
+	virtual void resume() = 0;
+	virtual void seek(int position_ms) = 0;
+	// Ends the playback and gives live television back. Nothing playing is fine.
+	virtual void stop() = 0;
+	// Where the page shows the video, in the pixels of the page.
+	virtual void window(int x, int y, int width, int height, int page_width, int page_height) = 0;
+	virtual HbbtvMediaState status() = 0;
+};
+
+HbbtvMedia &hbbtvMedia();
+void setHbbtvMedia(HbbtvMedia *m);
+
+// Binds the accessors above to the box's own player.
+void installRealHbbtvMedia();
+
 /* The tuner: which the box has, what each is doing, and what it is locked to.
 
    A box with no tuner at all is a box these answer about rather than one they

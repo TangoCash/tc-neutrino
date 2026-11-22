@@ -130,6 +130,20 @@ ScreenshotSource &screenshotSource()
 
 void setScreenshotSource(ScreenshotSource *s) { g_screenshot_source = s; }
 
+static HbbtvMedia *g_hbbtv_media = 0;
+
+HbbtvMedia &hbbtvMedia()
+{
+	if (!g_hbbtv_media)
+	{
+		std::fputs("coreapi: no HbbtvMedia installed\n", stderr);
+		std::abort();
+	}
+	return *g_hbbtv_media;
+}
+
+void setHbbtvMedia(HbbtvMedia *m) { g_hbbtv_media = m; }
+
 static LogoSource *g_logo_source = 0;
 
 LogoSource &logoSource()

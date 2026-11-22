@@ -48,6 +48,9 @@
 #include "lua_cc_window.h"
 #include "lua_configfile.h"
 #include "../scriptapi/script_neutrino.h"
+#ifdef ENABLE_NI_WEB
+#include <httpd/hbbtvtoken.h>
+#endif
 #include "../scriptapi/script_video.h"
 #include "lua_curl.h"
 #include "lua_filehelpers.h"
@@ -331,6 +334,7 @@ void LuaInstRegisterFunctions(lua_State *L, bool fromThreads/*=false*/)
 	const luaL_Reg methods[] =
 	{
 		{ "GetInput",               CLuaInstance::GetInput },
+		{ "HbbtvToken",             CLuaInstance::HbbtvToken },
 		{ "Blit",                   CLuaInstance::Blit },
 		{ "GetLanguage",            CLuaInstance::GetLanguage },
 		{ "PaintBox",               CLuaInstance::PaintBox },
@@ -481,6 +485,23 @@ int CLuaInstance::GCWindow(lua_State *L)
 		delete w;
 	}
 	return 0;
+}
+
+/* n:HbbtvToken(): a token for the HbbTV browser the hbbtv plugin starts, to
+   drive the media of its pages through /api/v1/hbbtv; nil without the web
+   server or when none could be drawn. */
+int CLuaInstance::HbbtvToken(lua_State *L)
+{
+#ifdef ENABLE_NI_WEB
+	const std::string token = httpd::openHbbtvToken();
+	if (!token.empty())
+	{
+		lua_pushstring(L, token.c_str());
+		return 1;
+	}
+#endif
+	lua_pushnil(L);
+	return 1;
 }
 
 int CLuaInstance::GetInput(lua_State *L)
