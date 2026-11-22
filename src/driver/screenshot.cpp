@@ -170,6 +170,62 @@ bool CScreenShot::mergeOsdScreen(uint32_t dx, uint32_t dy, fb_pixel_t* osdData)
 #endif
 
 /* try to get video frame data in ARGB format, restore GXA state */
+/* The HbbTV browser shows its page on an EGL plane of its own, which the
+   capture below does not see. Asked through its command FIFO, it writes the
+   page with its transparency to a file ("HBBS", width, height, BGRA rows);
+   that is laid over the picture, scaled to it. No browser, no reader on the
+   FIFO: the open fails at once and the picture stays as it is. */
+static void mergeBrowserScreen(uint8_t *data, int xres, int yres)
+{
+	static const char *fifo = "/tmp/openhbbtvbrowser.cmd";
+	static const char *screen = "/tmp/openhbbtvbrowser.screen";
+
+	unlink(screen);
+	int fd = open(fifo, O_WRONLY | O_NONBLOCK | O_CLOEXEC);
+	if (fd < 0)
+		return;
+	bool sent = write(fd, "screenshot\n", 11) == 11;
+	close(fd);
+	if (!sent)
+		return;
+	int tries = 30;
+	while (access(screen, R_OK) != 0 && --tries > 0)
+		usleep(50 * 1000);
+	FILE *f = fopen(screen, "rb");
+	if (!f)
+		return;
+	uint32_t header[3];
+	uint8_t *page = NULL;
+	if (fread(header, sizeof(header), 1, f) == 1 && header[0] == 0x53424248
+	    && header[1] > 0 && header[2] > 0 && header[1] <= 4096 && header[2] <= 4096) {
+		const uint32_t pw = header[1], ph = header[2];
+		page = (uint8_t *)malloc(pw * ph * 4);
+		if (page && fread(page, pw * 4, ph, f) == ph) {
+			for (int y = 0; y < yres; y++) {
+				const uint8_t *srow = page + (size_t)((uint32_t)y * ph / yres) * pw * 4;
+				uint8_t *d = data + (size_t)y * xres * 4;
+				for (int x = 0; x < xres; x++, d += 4) {
+					const uint8_t *p = srow + (size_t)((uint32_t)x * pw / xres) * 4;
+					const int a = p[3];
+					if (a == 0)
+						continue;
+					if (a == 255) {
+						d[0] = p[0]; d[1] = p[1]; d[2] = p[2];
+					} else {
+						d[0] = d[0] + (p[0] - d[0]) * a / 255;
+						d[1] = d[1] + (p[1] - d[1]) * a / 255;
+						d[2] = d[2] + (p[2] - d[2]) * a / 255;
+					}
+				}
+			}
+			printf("[CScreenShot::%s] browser page %ux%u merged\n", __func__, pw, ph);
+		}
+	}
+	free(page);
+	fclose(f);
+	unlink(screen);
+}
+
 bool CScreenShot::GetData()
 {
 	/* No lock of this object's own here any more. Every capture builds its own
@@ -253,6 +309,8 @@ bool CScreenShot::GetData()
 		printf(" done.\n \n");
 	}
 #endif
+	if (get_osd)
+		mergeBrowserScreen(pixel_data, xres, yres);
 	printf("[CScreenShot::%s:%d] data: %p %d x %d\n", __func__, __LINE__, pixel_data, xres, yres);
 	return true;
 }
