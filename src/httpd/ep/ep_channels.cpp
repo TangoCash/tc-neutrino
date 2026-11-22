@@ -1533,6 +1533,10 @@ const ToolFlag kChannelTools[] = {
 	HTTPD_TOOL_AS(Method::Put, "/api/v1/bouquets/{bouquet}/channels", "set_bouquet_channels",
 		"Replaces the television or radio channels of one bouquet: channels is a JSON array of hexadecimal "
 		"channel ids from list_channels in the order wanted; [] empties it. mode says which of the two lists."),
+	HTTPD_TOOL_AS(Method::Post, "/api/v1/channels/reload", "reload_channels",
+		"Makes the box read its channel, bouquet and WebTV lists again, for example after a list file was changed "
+		"on the box. By default what the box holds in memory is written out first and wins; hard true lets the "
+		"files on the box win instead. The box reloads on its own loop shortly after the answer."),
 };
 
 } // namespace

@@ -26,7 +26,7 @@
 #include <string>
 
 // What the box offers, whatever the allowlists hold.
-const size_t kOfferedTools = 48;
+const size_t kOfferedTools = 49;
 
 inline httpd::mcp::Caller callerAt(httpd::AuthLevel l)
 {

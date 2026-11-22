@@ -183,7 +183,7 @@ TEST_CASE("the box offers the proposed set at the proposed levels", "[mcp-boxtoo
 		"record_programme", "switch_channel", "set_timer", "remove_timer", "change_timer",
 		"timeshift_start", "timeshift_stop", "set_mode", "create_bouquet", "delete_bouquet",
 		"rename_bouquet", "move_bouquet", "hide_bouquet", "lock_bouquet", "set_bouquet_channels",
-		"play_recording", "delete_recording",
+		"reload_channels", "play_recording", "delete_recording",
 	};
 	const std::vector<mcp::ToolDef> all = shipped().list();
 	const std::set<std::string> read = names(all, AuthLevel::Read);
@@ -498,6 +498,7 @@ TEST_CASE("the box offers the grid, logo, timeshift, mode, bouquet, tuner, plugi
 		{ "hide_bouquet", AuthLevel::Write, false, false },
 		{ "lock_bouquet", AuthLevel::Write, false, false },
 		{ "set_bouquet_channels", AuthLevel::Write, false, false },
+		{ "reload_channels", AuthLevel::Write, false, false },
 		{ "list_tuners", AuthLevel::Read, true, false },
 		{ "list_plugins", AuthLevel::Read, true, false },
 		{ "settings_schema", AuthLevel::Read, true, false },

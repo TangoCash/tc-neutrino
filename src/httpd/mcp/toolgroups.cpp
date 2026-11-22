@@ -36,7 +36,7 @@ const char *const kRecordings[] = { "list_recordings", "stop_recording", "list_a
 const char *const kControl[] = { "switch_channel", "get_volume", "set_volume", "set_mute", "set_mode",
 	"show_message", "screenshot", "standby_state", "set_standby" };
 const char *const kBouquets[] = { "list_bouquets", "create_bouquet", "delete_bouquet", "set_bouquet_channels",
-	"rename_bouquet", "move_bouquet", "hide_bouquet", "lock_bouquet" };
+	"rename_bouquet", "move_bouquet", "hide_bouquet", "lock_bouquet", "reload_channels" };
 const char *const kStatus[] = { "box_info", "storage_space", "signal_quality", "list_tuners", "list_plugins",
 	"settings_schema", "read_settings" };
 const char *const kSettings[] = { "write_settings" };
