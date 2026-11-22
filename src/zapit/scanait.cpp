@@ -41,6 +41,7 @@ CAit::CAit()
 {
 	dmxnum = 0;
 	pid = 0;
+	onid = tsid = sid = 0;
 	running = false;
 }
 
@@ -139,8 +140,11 @@ bool CAit::Parse()
 		return false;
 
 	FILE *pFile = fopen("/tmp/ait.txt", "w");
-	if (pFile)
+	if (pFile) {
 		fprintf(pFile, "Channel: %s\n", name.c_str());
+		/* the service the AIT belongs to */
+		fprintf(pFile, "Service: onid=%u tsid=%u sid=%u\n", onid, tsid, sid);
+	}
 	short int profilecode = 0;
 	int orgid = 0, appid = 0, profileVersion = 0;
 
@@ -249,6 +253,9 @@ bool CAit::Parse()
 				if (pFile)
 				{
 					fprintf(pFile, "AppID: %d, AppName: %s, Url: %s\n", appid, applicationName.c_str(), hbbtvUrl.c_str());
+					/* the application the broadcaster starts by itself */
+					if (controlCode == 1)
+						fprintf(pFile, "AutoStart: %d\n", appid);
 				}
 			}
 		}
@@ -263,6 +270,9 @@ bool CAit::Parse(CZapitChannel *const channel)
 {
 	pid = channel->getAitPid();
 	name = channel->getName();
+	onid = channel->getOriginalNetworkId();
+	tsid = channel->getTransportStreamId();
+	sid = channel->getServiceId();
 	unlink("/tmp/ait.txt");
 	if (pid > 0)
 	{

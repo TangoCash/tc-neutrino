@@ -46,6 +46,8 @@ class CAit : public OpenThreads::Thread
 		unsigned short pid;
 		bool running;
 		std::string name;
+		/* the service the AIT belongs to, for /tmp/ait.txt */
+		unsigned int onid, tsid, sid;
 		ApplicationInformationSectionList sections;
 		void clearSections();
 		void run();
