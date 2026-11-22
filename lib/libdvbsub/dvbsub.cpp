@@ -137,6 +137,9 @@ int dvbsub_getpid()
 
 void dvbsub_setpid(int pid)
 {
+	/* zapit stores "no subtitle" as -1 */
+	if (pid <= 0)
+		pid = 0;
 	dvbsub_pid = pid;
 
 	if(dvbsub_pid == 0)
@@ -270,7 +273,13 @@ static void* reader_thread(void * /*arg*/)
 			pid_change_req = 0;
 			clear_queue();
 			dmx->Stop();
-			dmx->pesFilter(dvbsub_pid);
+			/* an invalid pid leaves the demux closed: reading it would
+			   spin without any wait, so go back to waiting instead */
+			if (!dmx->pesFilter(dvbsub_pid)) {
+				sub_debug.print(Debug::VERBOSE, "%s no valid pid 0x%x, stopped\n", __FUNCTION__, dvbsub_pid);
+				dvbsub_stopped = 1;
+				continue;
+			}
 			dmx->Start();
 			sub_debug.print(Debug::VERBOSE, "%s changed to pid 0x%x\n", __FUNCTION__, dvbsub_pid);
 		}
