@@ -68,6 +68,7 @@ noinst_LIBRARIES = libhttpd.a
 # on purpose is.
 COMPAT_SOURCES = \
 	compat/controlapi.cpp \
+	compat/hbbtvplayer.cpp \
 	compat/helper.cpp \
 	compat/hook.cpp \
 	compat/hookout.cpp \
