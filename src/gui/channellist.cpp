@@ -1041,6 +1041,16 @@ int CChannelList::show()
 
 	paint_events(-2); // cancel paint_events thread
 
+	/* The retry timer only wakes the loop above. Leaving the list without
+	 * hide() - dont_hide, when the list switches to another bouquet - must
+	 * not leave it running: nothing would handle it any more, and every
+	 * other loop (the infobar first) would take its ticks for a message of
+	 * its own to pass on and close. */
+	if (paint_events_retry_timer) {
+		g_RCInput->killTimer(paint_events_retry_timer);
+		paint_events_retry_timer = 0;
+	}
+
 	if (move_state == beMoving)
 		cancelMoveChannel();
 	if (edit_state)
