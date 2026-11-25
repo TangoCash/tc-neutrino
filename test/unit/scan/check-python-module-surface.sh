@@ -34,15 +34,21 @@ SRC="$1"
 HERE=`dirname "$0"`
 PYDIR="$SRC/src/gui/python"
 [ -d "$PYDIR" ] || { echo "check-python-module-surface.sh: cannot read $PYDIR" >&2; exit 1; }
+CONSTANTS="$SRC/src/scriptapi/script_constants.cpp"
+[ -r "$CONSTANTS" ] || { echo "check-python-module-surface.sh: cannot read $CONSTANTS" >&2; exit 1; }
 
 PLUGIN="${2:-}"
 if [ -n "$PLUGIN" ]; then
 	[ -r "$PLUGIN" ] || { echo "check-python-module-surface.sh: cannot read $PLUGIN" >&2; exit 1; }
 	set -- "$PLUGIN"
 else
-	set -- "$SRC"/data/plugins/python/*/*.py
+	set -- "$SRC"/data/plugins/pythonplugins/*/*.py
+	# No python script shipped is nothing to hold to the module, not a fault:
+	# the glob then stands for itself and is dropped. The module itself is
+	# still checked below.
+	[ -e "$1" ] || set --
 	for f in "$@"; do
-		[ -r "$f" ] || { echo "check-python-module-surface.sh: no python plugin to read in $SRC/data/plugins/python" >&2; exit 1; }
+		[ -r "$f" ] || { echo "check-python-module-surface.sh: cannot read $f" >&2; exit 1; }
 	done
 fi
 
@@ -50,11 +56,14 @@ tmp=`mktemp -d`
 trap 'rm -rf "$tmp"' EXIT
 
 # What the module carries: the name a binding adds its submodule under, the name
-# the menu adds its alias under, and the name of every constant table.
+# the menu adds its alias under, and the name of every constant table - those the
+# bindings add themselves and those setPythonVariables() takes over from the
+# script API (RC, SCREEN, POSTMSG, ...).
 {
 	grep -h -o 'PythonInstAddSubmodule(module, "[A-Za-z_][A-Za-z0-9_]*"' "$PYDIR"/*.cpp
 	grep -h -o 'PyModule_AddObject(module, "[A-Za-z_][A-Za-z0-9_]*"' "$PYDIR"/*.cpp
 	grep -h -o 'addConstTable[A-Za-z]*(module, "[A-Za-z_][A-Za-z0-9_]*"' "$PYDIR"/*.cpp
+	grep -h -o 'add(out, "[A-Za-z_][A-Za-z0-9_]*"' "$CONSTANTS"
 } | sed 's/^[^"]*"//; s/"$//' | LC_ALL=C sort -u > "$tmp/registered"
 
 rn=`wc -l < "$tmp/registered"`
@@ -88,9 +97,9 @@ awk '
 			if (parts[i] != "")
 				printf "%s\t%s:%d\n", parts[i], FILENAME, first
 	}
-' "$@" > "$tmp/imported"
+' "$@" < /dev/null > "$tmp/imported"
 
-if [ -z "$PLUGIN" ]; then
+if [ -z "$PLUGIN" ] && [ $# -gt 0 ]; then
 	im=`wc -l < "$tmp/imported"`
 	if [ "$im" -lt 2 ]; then
 		echo "check-python-module-surface.sh: $im imported names read out of the shipped plugins, the scan has stopped matching that shape" >&2

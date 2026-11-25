@@ -881,12 +881,10 @@ data/logos/Makefile
 data/license/Makefile
 data/locale/Makefile
 data/plugins/Makefile
-data/plugins/lua/Makefile
-data/plugins/lua/nlab/Makefile
-data/plugins/python/Makefile
-data/plugins/python/apiinfo/Makefile
-data/plugins/python/apitest/Makefile
-data/plugins/python/replay/Makefile
+data/plugins/luaplugins/Makefile
+data/plugins/luaplugins/nlab/Makefile
+data/plugins/pythonplugins/Makefile
+data/plugins/pythonplugins/npab/Makefile
 data/oled/Makefile
 data/oled/fonts/Makefile
 data/oled/icons/Makefile

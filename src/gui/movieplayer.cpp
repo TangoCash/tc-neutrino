@@ -54,6 +54,7 @@
 #include <scriptapi/script_ui.h>
 #ifdef ENABLE_PYTHON
 #include <gui/python/py_video.h>
+#include <gui/python/pyinstance.h>
 #endif
 #include <gui/screensaver.h>
 #include <gui/widget/menue_options.h>
@@ -1028,7 +1029,7 @@ void CMoviePlayerGui::Init(void)
 	vzap_it = filelist_it;
 	fromInfoviewer = false;
 	keyPressed = CMoviePlayerGui::PLUGIN_PLAYSTATE_NORMAL;
-	isLuaPlay = false;
+	isScriptPlay = false;
 	haveLuaInfoFunc = false;
 	havePythonInfoFunc = false;
 	blockedFromPlugin = false;
@@ -1243,12 +1244,13 @@ int CMoviePlayerGui::exec(CMenuTarget * parent, const std::string & actionKey)
 		is_file_player = true;
 		PlayFile();
 	}
-	else if (actionKey == "http_lua") {
+	else if (actionKey == "http_script") {
 		isHTTP = true;
-		isLuaPlay = true;
+		isScriptPlay = true;
 		is_file_player = true;
 		PlayFile();
 		haveLuaInfoFunc = false;
+		havePythonInfoFunc = false;
 	}
 	else {
 		return menu_return::RETURN_REPAINT;
@@ -1525,7 +1527,7 @@ void CMoviePlayerGui::ClearFlags()
 	isMovieBrowser = false;
 	isBookmark = false;
 	isHTTP = false;
-	isLuaPlay = false;
+	isScriptPlay = false;
 	isUPNP = false;
 	isWebChannel = false;
 	is_file_player = false;
@@ -2339,7 +2341,22 @@ static std::string jsonDrmHandlerParameters(const Json::Value &v)
 	return out;
 }
 
-bool CMoviePlayerGui::luaGetUrl(const std::string &script, const std::string &file, std::vector<livestream_info_t> &streamList, std::string *error_string, const std::string &display_name)
+static bool hasSuffix(const std::string &s, const std::string &suffix)
+{
+	return s.length() > suffix.length() && s.compare(s.length() - suffix.length(), suffix.length(), suffix) == 0;
+}
+
+static bool isLuaScript(const std::string &script)
+{
+	return hasSuffix(script, ".lua");
+}
+
+static bool isPythonScript(const std::string &script)
+{
+	return hasSuffix(script, ".py");
+}
+
+bool CMoviePlayerGui::scriptGetUrl(const std::string &script, const std::string &file, std::vector<livestream_info_t> &streamList, std::string *error_string, const std::string &display_name)
 {
 	std::string hint_text = g_Locale->getText(LOCALE_LIVESTREAM_READ_DATA);
 	if (!display_name.empty()) {
@@ -2356,21 +2373,34 @@ bool CMoviePlayerGui::luaGetUrl(const std::string &script, const std::string &fi
 
 	std::string result_code = "";
 	std::string result_string = "";
-	std::string lua_error = "";
-	std::string lua_script = script;
+	std::string script_error_text = "";
+	std::string script_file = script;
 
 	std::vector<std::string> args;
 	args.push_back(file);
-#ifdef ENABLE_LUA
-	CLuaInstance *lua = new CLuaInstance();
-	lua->runScript(lua_script.c_str(), &args, &result_code, &result_string, &lua_error);
-	delete lua;
+	if (isPythonScript(script_file)) {
+#ifdef ENABLE_PYTHON
+		/* a Python script hands back the same JSON string a Lua script
+		 * returns, as the name 'result' in its own namespace */
+		CPythonInstance *py = new CPythonInstance();
+		py->runScript(script_file.c_str(), &args, &result_code, &result_string, &script_error_text);
+		delete py;
+#else
+		script_error_text = "Python livestream scripts need Neutrino built with --enable-python";
+		printf(">>>>> [%s:%s:%d] %s: %s\n", __file__, __func__, __LINE__, script_error_text.c_str(), script_file.c_str());
 #endif
+	} else {
+#ifdef ENABLE_LUA
+		CLuaInstance *lua = new CLuaInstance();
+		lua->runScript(script_file.c_str(), &args, &result_code, &result_string, &script_error_text);
+		delete lua;
+#endif
+	}
 	ScriptUi::setListener(NULL, NULL);
 	if ((result_code != "0") || result_string.empty()) {
 		if (error_string) {
-			if (!lua_error.empty())
-				*error_string = lua_error;
+			if (!script_error_text.empty())
+				*error_string = script_error_text;
 			else if (!result_string.empty())
 				*error_string = result_string;
 			else
@@ -2605,13 +2635,16 @@ bool CMoviePlayerGui::getLiveUrlDetailed(const std::string &url, const std::stri
 			return false;
 		}
 	}
-	size_t pos = _script.find(".lua");
-	if (!file_exists(_script.c_str()) || (pos == std::string::npos) || (_script.length()-pos != 4)) {
-		printf(">>>>> [%s:%s:%d] script error\n", __file__, __func__, __LINE__);
+	if (!file_exists(_script.c_str())) {
+		printf(">>>>> [%s:%s:%d] script error: %s not found\n", __file__, __func__, __LINE__, _script.c_str());
 		return false;
 	}
-	if (!luaGetUrl(_script, url, liveStreamList, &script_error, _pretty_name)) {
-		printf(">>>>> [%s:%s:%d] lua script error\n", __file__, __func__, __LINE__);
+	if (!isLuaScript(_script) && !isPythonScript(_script)) {
+		printf(">>>>> [%s:%s:%d] script error: %s is neither a .lua nor a .py file\n", __file__, __func__, __LINE__, _script.c_str());
+		return false;
+	}
+	if (!scriptGetUrl(_script, url, liveStreamList, &script_error, _pretty_name)) {
+		printf(">>>>> [%s:%s:%d] %s script error\n", __file__, __func__, __LINE__, isPythonScript(_script) ? "python" : "lua");
 		if (!script_error.empty()) {
 			webtv_error_reason_t script_reason = WEBTV_ERROR_NONE;
 			std::string script_host;
@@ -3045,7 +3078,7 @@ void CMoviePlayerGui::PlayFile(void)
 	PlayFileStart();
 	PlayFileLoop();
 	bool repeat = (repeat_mode == REPEAT_OFF);
-	if (isLuaPlay)
+	if (isScriptPlay)
 		repeat = (!blockedFromPlugin);
 	PlayFileEnd(repeat);
 }
@@ -3256,7 +3289,7 @@ void CMoviePlayerGui::quickZap(neutrino_msg_t msg)
 	if (msg == CRCInput::RC_right || msg == CRCInput::RC_nextsong || msg == (neutrino_msg_t) g_settings.key_quickzap_up)
 	{
 		//printf("CMoviePlayerGui::%s: CRCInput::RC_right or g_settings.key_quickzap_up\n", __func__);
-		if (isLuaPlay || isUPNP)
+		if (isScriptPlay || isUPNP)
 		{
 			playstate = CMoviePlayerGui::STOPPED;
 			keyPressed = CMoviePlayerGui::PLUGIN_PLAYSTATE_NEXT;
@@ -3288,7 +3321,7 @@ void CMoviePlayerGui::quickZap(neutrino_msg_t msg)
 	else if (msg == CRCInput::RC_left || msg == CRCInput::RC_previoussong || msg == (neutrino_msg_t) g_settings.key_quickzap_down)
 	{
 		//printf("CMoviePlayerGui::%s: CRCInput::RC_left or g_settings.key_quickzap_down\n", __func__);
-		if (isLuaPlay || isUPNP)
+		if (isScriptPlay || isUPNP)
 		{
 			playstate = CMoviePlayerGui::STOPPED;
 			keyPressed = CMoviePlayerGui::PLUGIN_PLAYSTATE_PREV;
@@ -3968,33 +4001,37 @@ void CMoviePlayerGui::showMovieInfo()
 	if (g_settings.movieplayer_display_playtime)
 		updateLcd(false); // force title
 
+#if defined(ENABLE_LUA) || defined(ENABLE_PYTHON)
+	/* a script that plays a file can hand over an info function of its
+	 * own; each binding is asked only where it is built in */
+	bool luaInfo = false;
+	bool pythonInfo = false;
 #ifdef ENABLE_LUA
-	if (isLuaPlay && haveLuaInfoFunc)
-	{
-		int xres = 0, yres = 0, aspectRatio = 0, framerate = -1;
-		if (!videoDecoder->getBlank())
-		{
-			videoDecoder->getPictureInfo(xres, yres, framerate);
-			if (yres == 1088)
-				yres = 1080;
-			aspectRatio = videoDecoder->getAspectRatio();
-		}
-		CLuaInstVideo::getInstance()->execLuaInfoFunc(luaState, xres, yres, aspectRatio, framerate);
-	}
-#ifdef ENABLE_PYTHON
-	else if (havePythonInfoFunc)
-	{
-		int xres = 0, yres = 0, aspectRatio = 0, framerate = -1;
-		if (!videoDecoder->getBlank())
-		{
-			videoDecoder->getPictureInfo(xres, yres, framerate);
-			if (yres == 1088)
-				yres = 1080;
-			aspectRatio = videoDecoder->getAspectRatio();
-		}
-		CPythonInstVideo::getInstance()->execPythonInfoFunc(pythonState, xres, yres, aspectRatio, framerate);
-	}
+	luaInfo = isScriptPlay && haveLuaInfoFunc;
 #endif
+#ifdef ENABLE_PYTHON
+	pythonInfo = isScriptPlay && havePythonInfoFunc && !luaInfo;
+#endif
+
+	if (luaInfo || pythonInfo)
+	{
+		int xres = 0, yres = 0, aspectRatio = 0, framerate = -1;
+		if (!videoDecoder->getBlank())
+		{
+			videoDecoder->getPictureInfo(xres, yres, framerate);
+			if (yres == 1088)
+				yres = 1080;
+			aspectRatio = videoDecoder->getAspectRatio();
+		}
+#ifdef ENABLE_LUA
+		if (luaInfo)
+			CLuaInstVideo::getInstance()->execLuaInfoFunc(luaState, xres, yres, aspectRatio, framerate);
+#endif
+#ifdef ENABLE_PYTHON
+		if (pythonInfo)
+			CPythonInstVideo::getInstance()->execPythonInfoFunc(pythonState, xres, yres, aspectRatio, framerate);
+#endif
+	}
 	else
 #endif
 		g_EpgData->show_mp(p_movie_info,GetPosition(),GetDuration());

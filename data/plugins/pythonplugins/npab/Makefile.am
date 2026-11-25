@@ -1,4 +1,4 @@
 installdir = $(PYTHONPLUGINDIR)
 
-install_DATA = \
-	apiinfo.py
+install_SCRIPTS = \
+	npab.py
