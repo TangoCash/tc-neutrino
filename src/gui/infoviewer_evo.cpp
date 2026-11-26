@@ -153,8 +153,16 @@ CInfoViewerEvo::CInfoViewerEvo ()
 	sigbox			= NULL; //NI
 	numbox_offset		= OFFSET_INNER_SMALL; //NI
 	numbox_maxtxtwidth	= 0; //NI
-	bbIconInfo[0].x = 0;
-	bbIconInfo[0].h = 0;
+	for (int i = 0; i < ICON_MAX; i++)
+	{
+		bbIconInfo[i].x = -1;
+		bbIconInfo[i].w = 0;
+		bbIconInfo[i].h = 0;
+		bbIconInfo[i].enabled = false;
+		bbIconPaintedX[i] = -1;
+		bbIconPaintedW[i] = 0;
+	}
+	bbIconBatch = false;
 	BBarY = 0;
 	BBarFontY = 0;
 	foot			= NULL;
@@ -445,7 +453,14 @@ void CInfoViewerEvo::paintHead(t_channel_id channel_id,std::string channel_name)
 
 	header->getChannelLogoObject()->enableEventLogo(true);
 	header->setChannelLogo(channel_id,channel_name,CC_LOGO_LEFT);
-	header->setCaptionMaxWidth(std::max(0, header->getWidth() - time_width - 3*OFFSET_INNER_MID - showBBIcons_width));
+	/* the caption ends left of the icons shown (layoutIcons()), which are
+	 * painted from bbIconInfo[].x - time_width: take their left edge; the
+	 * header places the caption at offset OFFSET_INNER_MID and widens it by
+	 * another OFFSET_INNER_MID, a third one keeps it off the icons */
+	int caption_max_w = header->getWidth() - time_width - 3*OFFSET_INNER_MID;
+	if (showBBIcons_width > 0)
+		caption_max_w = std::min(caption_max_w, bbIconMinX - time_width - head_x - 3*OFFSET_INNER_MID);
+	header->setCaptionMaxWidth(std::max(0, caption_max_w));
 
 	if (!header->getChannelLogoObject()->hasLogo())
 	{
@@ -464,6 +479,8 @@ void CInfoViewerEvo::paintHead(t_channel_id channel_id,std::string channel_name)
 
 	header->paint(CC_SAVE_SCREEN_NO);
 	header_height = header->getHeight();
+	/* the header covers the icons: paint them again */
+	paintIcons();
 }
 
 void CInfoViewerEvo::paintBody()
@@ -2287,72 +2304,87 @@ bool CInfoViewerEvo::checkIcon(const char * const icon, int *w, int *h)
 
 void CInfoViewerEvo::getIconInfo()
 {
-	bbIconMaxH 		= 0;
-	showBBIcons_width = 0;
-	bbIconMinX 		= BoxEndX - 2*OFFSET_INNER_MID;
+	/* which places of the icon row this mode and the settings use; where
+	 * they go and how wide they are follows from the icons actually shown
+	 * (layoutIcons()) */
 	bool isRadioMode	= (CNeutrinoApp::getInstance()->getMode() == NeutrinoModes::mode_radio || CNeutrinoApp::getInstance()->getMode() == NeutrinoModes::mode_webradio);
+	bool isTsMode		= (CNeutrinoApp::getInstance()->getMode() == NeutrinoModes::mode_ts);
 
 	for (int i = 0; i < CInfoViewerEvo::ICON_MAX; i++)
 	{
-		int w = 0, h = 0;
-		bool iconView = false;
+		bool enabled = false;
 		switch (i)
 		{
 		case CInfoViewerEvo::ICON_SUBT:  //no radio
-			if (!isRadioMode)
-				iconView = checkIcon(NEUTRINO_ICON_SUBT, &w, &h);
+			enabled = !isRadioMode;
 			break;
 		case CInfoViewerEvo::ICON_RT:
-			if (isRadioMode && g_settings.radiotext_enable)
-				iconView = checkIcon(NEUTRINO_ICON_RADIOTEXT_GET, &w, &h);
+			enabled = isRadioMode && g_settings.radiotext_enable;
 			break;
 		case CInfoViewerEvo::ICON_DD:
-			if (EVO_INFOBAR_SHOW_DD_AVAILABLE)
-				iconView = checkIcon(NEUTRINO_ICON_DD, &w, &h);
+			enabled = EVO_INFOBAR_SHOW_DD_AVAILABLE;
 			break;
 		case CInfoViewerEvo::ICON_16_9:  //no radio
-			if (!isRadioMode)
-				iconView = checkIcon(NEUTRINO_ICON_16_9, &w, &h);
+			enabled = !isRadioMode;
 			break;
 		case CInfoViewerEvo::ICON_RES:  //no radio
-			if (!isRadioMode && EVO_INFOBAR_SHOW_RES < 2)
-				iconView = checkIcon(EVO_INFOBAR_SHOW_RES ? NEUTRINO_ICON_RESOLUTION_HD : NEUTRINO_ICON_RESOLUTION_1280, &w, &h);
+			enabled = !isRadioMode && EVO_INFOBAR_SHOW_RES < 2;
 			break;
 		case CInfoViewerEvo::ICON_CA:
-			if (g_settings.infobar_casystem_display == 2 && CNeutrinoApp::getInstance()->getMode() != NeutrinoModes::mode_ts)
-				iconView = checkIcon(NEUTRINO_ICON_SCRAMBLED, &w, &h);
+			enabled = g_settings.infobar_casystem_display == 2 && !isTsMode;
 			break;
 		case CInfoViewerEvo::ICON_TUNER:
-			if (CFEManager::getInstance()->getEnabledCount() > 1 && g_settings.infobar_show_tuner == 1 && !IS_WEBCHAN(get_current_channel_id()) && CNeutrinoApp::getInstance()->getMode() != NeutrinoModes::mode_ts)
-#if 0
-				iconView = checkIcon(NEUTRINO_ICON_TUNER_1, &w, &h);
-#endif
-				iconView = checkIcon("tuner_01", &w, &h);
+			enabled = CFEManager::getInstance()->getEnabledCount() > 1 && g_settings.infobar_show_tuner == 1 && !IS_WEBCHAN(get_current_channel_id()) && !isTsMode;
 			break;
 		case CInfoViewerEvo::ICON_LOGO:
-			if ((access(NEUTRINO_ICON_LOGO, F_OK) == 0))
-				iconView = checkIcon(NEUTRINO_ICON_LOGO, &w, &h);
+			enabled = (access(NEUTRINO_ICON_LOGO, F_OK) == 0);
 			break;
 		default:
 			break;
 		}
-		if (iconView)
-		{
-			if (i > 0)
-				bbIconMinX -= OFFSET_INNER_MIN;
-			bbIconMinX -= w;
-			bbIconInfo[i].x = bbIconMinX;
-			bbIconInfo[i].h = h;
-			showBBIcons_width += w;
-		}
-		else
-			bbIconInfo[i].x = -1;
+		bbIconInfo[i].enabled = enabled;
+		if (!enabled)
+			bbIconInfo[i].icon.clear();
 	}
+	layoutIcons();
+}
+
+bool CInfoViewerEvo::layoutIcons()
+{
+	bool changed = false;
+	bbIconMaxH = 0;
+	showBBIcons_width = 0;
+	bbIconMinX = BoxEndX - 2*OFFSET_INNER_MID;
+
 	for (int i = 0; i < CInfoViewerEvo::ICON_MAX; i++)
 	{
-		if (bbIconInfo[i].x != -1)
-			bbIconMaxH = std::max(bbIconMaxH, bbIconInfo[i].h);
+		int w = 0, h = 0;
+		if (bbIconInfo[i].enabled && !bbIconInfo[i].icon.empty())
+			checkIcon(bbIconInfo[i].icon.c_str(), &w, &h);
+		if (w > 0 && h > 0)
+		{
+			if (showBBIcons_width > 0)
+			{
+				bbIconMinX -= OFFSET_INNER_MIN;
+				showBBIcons_width += OFFSET_INNER_MIN;
+			}
+			bbIconMinX -= w;
+			showBBIcons_width += w;
+			bbIconInfo[i].x = bbIconMinX;
+			bbIconInfo[i].w = w;
+			bbIconInfo[i].h = h;
+			bbIconMaxH = std::max(bbIconMaxH, h);
+		}
+		else
+		{
+			bbIconInfo[i].x = -1;
+			bbIconInfo[i].w = 0;
+			bbIconInfo[i].h = 0;
+		}
+		if (bbIconInfo[i].x != bbIconPaintedX[i] || bbIconInfo[i].w != bbIconPaintedW[i])
+			changed = true;
 	}
+	return changed;
 }
 
 void CInfoViewerEvo::getButtonInfo()
@@ -2542,11 +2574,32 @@ void CInfoViewerEvo::showButtons(bool)
 
 void CInfoViewerEvo::showIcons(const int modus, const std::string & icon)
 {
-	if ((bbIconInfo[modus].x <= ChanInfoX) || (bbIconInfo[modus].x >= BoxEndX))
+	if ((modus < CInfoViewerEvo::ICON_SUBT) || (modus >= CInfoViewerEvo::ICON_MAX) || !bbIconInfo[modus].enabled)
 		return;
-	if ((modus >= CInfoViewerEvo::ICON_SUBT) && (modus < CInfoViewerEvo::ICON_MAX) && (bbIconInfo[modus].x != -1) && (is_visible))
+	bbIconInfo[modus].icon = icon;
+	if (bbIconBatch || !is_visible)
+		return;
+	if (layoutIcons())
 	{
+		/* another row: the channel name gets the space the icons leave,
+		 * paintHead() paints the header and the icons again */
+		paintHead(current_channel_id, ChannelName);
+		return;
+	}
+	if (bbIconInfo[modus].x != -1)
 		frameBuffer->paintIcon(icon, bbIconInfo[modus].x - time_width, ChanNameY + (header_height - bbIconMaxH)/2,
+		                       0, 1, true, !g_settings.theme.infobar_gradient_top, COL_INFOBAR_BUTTONS_BACKGROUND);
+}
+
+void CInfoViewerEvo::paintIcons()
+{
+	for (int i = 0; i < CInfoViewerEvo::ICON_MAX; i++)
+	{
+		bbIconPaintedX[i] = bbIconInfo[i].x;
+		bbIconPaintedW[i] = bbIconInfo[i].w;
+		if (!is_visible || bbIconInfo[i].x == -1)
+			continue;
+		frameBuffer->paintIcon(bbIconInfo[i].icon, bbIconInfo[i].x - time_width, ChanNameY + (header_height - bbIconMaxH)/2,
 		                       0, 1, true, !g_settings.theme.infobar_gradient_top, COL_INFOBAR_BUTTONS_BACKGROUND);
 	}
 }
@@ -2572,7 +2625,11 @@ void CInfoViewerEvo::paintshowButtonBar()
 
 	if (g_settings.infobar_casystem_display < 2)
 		paint_cam_icons();
-	// Icons, starting from right
+	// Icons, starting from right: collect the ones shown now, then lay
+	// them out and paint them once
+	for (int i = 0; i < CInfoViewerEvo::ICON_MAX; i++)
+		bbIconInfo[i].icon.clear();
+	bbIconBatch = true;
 	showIcon_SubT();
 	showIcon_DD();
 	showIcon_16_9();
@@ -2580,6 +2637,11 @@ void CInfoViewerEvo::paintshowButtonBar()
 	showIcon_Resolution();
 	showIcon_Tuner();
 	showIcon_Logo();
+	bbIconBatch = false;
+	if (layoutIcons())
+		paintHead(current_channel_id, ChannelName);
+	else
+		paintIcons();
 	if (g_settings.infobar_casystem_display < 2)
 		showScale_RecordingDir();
 }
@@ -2761,7 +2823,8 @@ void CInfoViewerEvo::showIcon_Resolution()
 				icon_name = NEUTRINO_ICON_RESOLUTION_000;
 		}
 	}
-	showIcons(CInfoViewerEvo::ICON_RES, icon_name);
+	if (icon_name)
+		showIcons(CInfoViewerEvo::ICON_RES, icon_name);
 }
 
 void CInfoViewerEvo::showOne_CAIcon()

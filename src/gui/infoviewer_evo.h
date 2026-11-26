@@ -197,10 +197,16 @@ private:
 	bool	camCI;
 	bool	useCI;
 
+	/* one place of the icon row in the header: enabled by getIconInfo()
+	 * (mode and settings), icon set by showIcons(), x/w/h from layoutIcons()
+	 * for the shown icons only (x = -1: not shown) */
 	typedef struct
 	{
 		int x;
+		int w;
 		int h;
+		bool enabled;
+		std::string icon;
 	} bbIconInfoStruct;
 
 	bbIconInfoStruct bbIconInfo[ICON_MAX];
@@ -220,6 +226,14 @@ private:
 
 	void paintFoot(int w = 0);
 	void showIcons(const int modus, const std::string & icon);
+	/* lay the shown icons out from the right with their own widths; true
+	 * if the row differs from the one painted last (the header is painted
+	 * again then: the channel name gets the space the icons leave) */
+	bool layoutIcons(void);
+	void paintIcons(void);
+	bool bbIconBatch;		// paintshowButtonBar(): collect the icons, paint once
+	int bbIconPaintedX[ICON_MAX];	// x of each icon as painted last
+	int bbIconPaintedW[ICON_MAX];
 	bool checkIcon(const char * const icon, int *w, int *h);
 	void getIconInfo(void);
 
