@@ -138,6 +138,7 @@
 #include "gui/webchannels_setup.h"
 
 #include "gui/widget/hintbox.h"
+#include "gui/widget/progresswindow.h"
 #include "gui/widget/icons.h"
 #include "gui/widget/menue.h"
 #include "gui/widget/settingitem.h"
@@ -3194,6 +3195,50 @@ static bool saveNeutrinoSettings()
 	return true;
 }
 
+/* Start progress (as in neutrino-tangos evo): a progress window over the start
+   logo, and one log line per step with the time since the start and the time
+   the previous step took, so a slow start shows where it spends the time. */
+class CBootProgress
+{
+	private:
+		CProgressWindow *window;
+		int64_t start_ms, step_ms;
+		std::string step_text;
+
+		void logStep(const char *next)
+		{
+			int64_t now = time_monotonic_ms();
+			if (!step_text.empty())
+				printf("[neutrino] boot: '%s' took %" PRId64 " ms\n", step_text.c_str(), now - step_ms);
+			if (next != NULL)
+				printf("[neutrino] boot: +%" PRId64 " ms %s\n", now - start_ms, next);
+			step_ms = now;
+			step_text = next != NULL ? next : "";
+		}
+
+	public:
+		CBootProgress(const std::string &title)
+		{
+			start_ms = step_ms = time_monotonic_ms();
+			window = new CProgressWindow(title);
+			window->enableShadow();
+			window->paint();
+		}
+		~CBootProgress()
+		{
+			logStep(NULL);
+			printf("[neutrino] boot: done after %" PRId64 " ms\n", time_monotonic_ms() - start_ms);
+			window->hide();
+			delete window;
+		}
+		void step(unsigned int prog, const char *text)
+		{
+			logStep(text);
+			window->showStatus(prog, 100, text);
+		}
+		void hide() { window->hide(); }
+};
+
 int CNeutrinoApp::run(int argc, char **argv)
 {
 	/* Drop any action file left over from a previous crashed run, so no stale
@@ -3270,14 +3315,11 @@ TIMER_START();
 	char start_text [100];
 	snprintf(start_text, sizeof(start_text), g_Locale->getText(LOCALE_NEUTRINO_STARTING), PACKAGE_NAME, PACKAGE_VERSION );
 	start_text[99] = '\0';
-	CHintBox * hintBox = new CHintBox(LOCALE_MESSAGEBOX_INFO, start_text);
+	CBootProgress *bootstatus = new CBootProgress(start_text);
+	bootstatus->step(5, "loading settings");
 
 	// show startlogo
-	bool startlogo = false;
-	if (!show_startwizard)
-		startlogo = true;
-	else
-		hintBox->paint();
+	bool startlogo = !show_startwizard;
 
 	CVFD::getInstance()->init(neutrinoFonts->fontDescr.filename.c_str(), neutrinoFonts->fontDescr.name.c_str());
 	CVFD::getInstance()->Clear();
@@ -3293,6 +3335,7 @@ TIMER_START();
 	CFileHelpers::getInstance()->removeDir(COVERDIR_TMP);
 	CFileHelpers::getInstance()->removeDir(LOGODIR_TMP);
 
+	bootstatus->step(10, "starting zapit");
 	/* set service manager options before starting zapit */
 	CServiceManager::getInstance()->KeepNumbers(g_settings.keep_channel_numbers);
 	//zapit start parameters
@@ -3313,6 +3356,7 @@ TIMER_START();
 	CZapit::getInstance()->GetConfig(zapitCfg);
 
 
+	bootstatus->step(30, "decoders");
 	g_videoSettings = new CVideoSettings;
 
 	/* CZapit::Start created both decoders above; the phase gives the audio, the
@@ -3332,8 +3376,10 @@ TIMER_START();
 	if (startlogo)
 		startlogo = frameBuffer->showFrame("start.jpg");
 
+	bootstatus->step(40, "remote control");
 	g_RCInput = new CRCInput();
 
+	bootstatus->step(45, "zapit client");
 	InitZapitClient();
 	g_Zapit->setStandby(false);
 
@@ -3345,6 +3391,7 @@ TIMER_START();
 	coreapi::deferCec(init_cec_setting);
 	coreapi::runPhase(coreapi::ApplyPhase::Zapit);
 
+	bootstatus->step(50, "fast scan check");
 	CheckFastScan();
 
 	// dirty part of hw_caps - specify some details after zapit start
@@ -3361,6 +3408,7 @@ TIMER_START();
 			strcpy(g_info.hw_caps->boxname, "Neo Twin");
 	}
 
+	bootstatus->step(55, "timerd");
 	//timer start
 	long timerd_signal = timer_wakeup;
 	pthread_create (&timer_thread, NULL, timerd_main_thread, (void *)&timerd_signal);
@@ -3374,6 +3422,7 @@ TIMER_START();
 
 	dvbsub_init();
 
+	bootstatus->step(60, "core api");
 	// Has to stay above every thread started below, because the facade aborts
 	// on a caller that finds no source installed, and refuses every settings
 	// read until the store is handed over.
@@ -3409,6 +3458,7 @@ TIMER_START();
 	// in them: the save writes that copy and not the member.
 	installOsdResolutionSource();
 
+	bootstatus->step(65, "web interface");
 #ifdef ENABLE_NI_WEB
 	/* First, because the file read below is the one this writes. A box with no
 	 * file of its own gets one here on every start until it has one: with the
@@ -3488,6 +3538,7 @@ TIMER_START();
 		printf("[neutrino] ni-web did not start, port %d\n", httpd::config().server.port);
 #endif
 
+	bootstatus->step(70, "streaming and EPG");
 	CStreamManager::getInstance()->Start();
 
 #ifndef DISABLE_SECTIONSD
@@ -3500,6 +3551,7 @@ TIMER_START();
 	// group that copes with the daemon being absent, and not dropped as never ready.
 	coreapi::runPhase(coreapi::ApplyPhase::Sectionsd);
 
+	bootstatus->step(75, "user interface");
 	g_RemoteControl = new CRemoteControl;
 	g_EpgData = new CEpgData;
 	InfoClock = CInfoClock::getInstance();
@@ -3511,6 +3563,7 @@ TIMER_START();
 	g_InfoViewer = CInfoViewerBase::create();
 	g_EventList = new CEventList;
 
+	bootstatus->step(80, "CAM");
 	g_CamHandler = new CCAMMenuHandler();
 	g_CamHandler->init();
 
@@ -3524,6 +3577,7 @@ TIMER_START();
 	else if (! zapit_init)
 		DisplayErrorMessage(g_Locale->getText(LOCALE_ZAPIT_INIT_FAILED));
 
+	bootstatus->step(85, "mounts and plugins");
 #ifndef ASSUME_MDEV
 	mkdir("/media/sda1", 0755);
 	mkdir("/media/sdb1", 0755);
@@ -3540,6 +3594,7 @@ TIMER_START();
 	g_Plugins->setPluginDir(PLUGINDIR);
 	coreapi::runPhase(coreapi::ApplyPhase::Network);
 
+	bootstatus->step(90, "menus");
 	dprintf( DEBUG_NORMAL, "menue setup\n");
 	//init Menues
 	InitMenu();
@@ -3548,6 +3603,7 @@ TIMER_START();
 
 	InitSectiondClient();
 
+	bootstatus->step(95, "waiting for timerd");
 	/* wait until timerd is ready... */
 	int64_t timerd_wait = time_monotonic_ms();
 	while (timerd_signal >= 0) {
@@ -3579,7 +3635,7 @@ TIMER_START();
 #endif
 
 	if (show_startwizard) {
-		hintBox->hide();
+		bootstatus->hide();
 		CStartUpWizard startwizard;
 		startwizard.exec(NULL, "");
 	}
@@ -3587,13 +3643,14 @@ TIMER_START();
 	// clean up startlogo
 	if (startlogo)
 	{
+		bootstatus->step(97, "start logo");
 		startlogo = false;
 		sleep(3);
 		frameBuffer->stopFrame();
 	}
 
 	if(loadSettingsErg) {
-		hintBox->hide();
+		bootstatus->hide();
 		dprintf(DEBUG_INFO, "config file or options missing\n");
 		ShowHint(LOCALE_MESSAGEBOX_INFO, loadSettingsErg ==  1 ? g_Locale->getText(LOCALE_SETTINGS_NOCONFFILE)
 				: g_Locale->getText(LOCALE_SETTINGS_MISSINGOPTIONSCONFFILE));
@@ -3601,10 +3658,10 @@ TIMER_START();
 		saveSetup(NEUTRINO_SETTINGS_FILE);
 	}
 
+	bootstatus->step(100, "zapping");
 	InitZapper();
 
-	hintBox->hide(); // InitZapper also displays a hintbox
-	delete hintBox;
+	delete bootstatus; // InitZapper also displays a hintbox
 
 	cCA::GetInstance()->Ready(true);
 	//InitZapper();
