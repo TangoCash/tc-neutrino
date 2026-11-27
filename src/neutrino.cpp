@@ -3643,9 +3643,7 @@ TIMER_START();
 	// clean up startlogo
 	if (startlogo)
 	{
-		bootstatus->step(97, "start logo");
 		startlogo = false;
-		sleep(3);
 		frameBuffer->stopFrame();
 	}
 
