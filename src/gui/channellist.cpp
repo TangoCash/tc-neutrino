@@ -539,7 +539,12 @@ void CChannelList::calcSize()
 
 	// calculate height (the infobox below mainbox is handled outside height)
 	if (g_settings.channellist_show_infobox)
+	{
 		info_height = 2*fheight + fdescrheight + 2*OFFSET_INNER_SMALL;
+		// footer line off: no third line (from neutrino-tangos evo)
+		if (g_settings.channellist_foot == 2)
+			info_height = 2*fheight + 2*OFFSET_INNER_SMALL;
+	}
 	else
 		info_height = 0;
 	height = frameBuffer->getWindowHeight();
@@ -2145,9 +2150,13 @@ void CChannelList::paintItem(int pos, const bool firstpaint)
 			pip_icon = NEUTRINO_ICON_MARKER_PIP;
 #endif
 
+		// With the evo infoviewer the favourites lists show no resolution,
+		// scramble or webtv icons, as in neutrino-tangos evo
+		bool evo_fav = g_settings.infobar_evo_infoviewer && CNeutrinoApp::getInstance()->GetChannelMode() == LIST_MODE_FAV;
+
 		//set resolution icon
 		const char *res_icon = NULL;
-		if (g_settings.channellist_show_res_icon)
+		if (g_settings.channellist_show_res_icon && !evo_fav)
 		{
 			if (chan->isHD())
 				res_icon = NEUTRINO_ICON_MARKER_HD;
@@ -2159,7 +2168,7 @@ void CChannelList::paintItem(int pos, const bool firstpaint)
 
 		//set webtv icon
 		const char *webtv_icon = NULL;
-		if (!chan->getUrl().empty())
+		if (!chan->getUrl().empty() && !evo_fav)
 			webtv_icon = NEUTRINO_ICON_MARKER_STREAMING;
 
 		//set lock icon
@@ -2169,7 +2178,7 @@ void CChannelList::paintItem(int pos, const bool firstpaint)
 
 		//set scramble icon
 		const char *scramble_icon = NULL;
-		if (chan->scrambled)
+		if (chan->scrambled && !evo_fav)
 			scramble_icon = NEUTRINO_ICON_MARKER_SCRAMBLED;
 
 		//calculate and paint right status icons
