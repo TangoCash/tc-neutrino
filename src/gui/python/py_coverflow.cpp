@@ -86,7 +86,7 @@ static bool cardFieldString(PyObject *item, const char *what, std::string &value
 	return res;
 }
 
-/* coverflow.new(cards=[{image="logo", text="text"}, ...], width=480, max_lines=5, pic_max_h=300)
+/* coverflow.new(cards=[{image="logo", text="text"}, ...], width=480, max_lines=5, pic_max_h=300, title="")
  *
  * The menu a script shows: one card per entry, the active one in the middle.
  * What is done with the parameters is done by the script API, so that both
@@ -115,6 +115,8 @@ PyObject *CPythonInstCoverFlow::CoverFlowNew(PyTypeObject *type, PyObject *args,
 	long pic_max_h = (long)pars.pic_max_h;
 	pyLookupInt(kwds, "pic_max_h", pic_max_h);
 	pars.pic_max_h = (int)pic_max_h;
+
+	pyLookupString(kwds, "title", pars.title);   /* the bar above the cards, optional */
 
 	PyObject *cards = NULL;
 	if (!pyLookupList(kwds, "cards", &cards)) {

@@ -4,4 +4,4 @@
  * to pyinstance.h changes
  */
 #define PYTHON_API_VERSION_MAJOR 1
-#define PYTHON_API_VERSION_MINOR 2
+#define PYTHON_API_VERSION_MINOR 3

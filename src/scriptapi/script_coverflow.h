@@ -33,9 +33,10 @@
 #include <gui/widget/coverflow.h>
 
 /* The menu a script shows: one coverflow card per entry, the active card in
- * the middle of the screen and its neighbours beside it. Left and right move
- * between the cards, ok selects the one in the middle, back leaves without a
- * selection. */
+ * the middle of the screen and its neighbours beside it, a bar above them
+ * with the title and the position in the list. Left and right move between
+ * the cards, up and down (and page up/down) ten at a time, ok selects the one
+ * in the middle, back leaves without a selection. */
 class ScriptCoverFlow
 {
 	public:
@@ -53,6 +54,7 @@ class ScriptCoverFlow
 			int	width;       /* width (logical px) of the card in the middle */
 			int	max_lines;   /* most lines of text shown per card */
 			int	pic_max_h;   /* maximum height (logical px) of a cover image */
+			std::string	title;   /* shown in the bar above the cards, may be empty */
 		} params_t;
 
 		explicit ScriptCoverFlow(const params_t &pars);
@@ -74,11 +76,15 @@ class ScriptCoverFlow
 	private:
 		std::vector<card_t>	cards;
 		int	width, max_lines, pic_max_h;
+		std::string	title;
+		CComponentsText	*head;   /* the bar above the cards: title and position */
 		int	active_idx;   /* the card in the middle, from zero */
 		int	last_dir;     /* the direction of the last move: +1 right, -1 left */
 		std::vector<CCoverFlow*>	shown;  /* the cards on screen now */
 
 		void	render(int active);
+		/* the bar above the cards, returns its bottom edge (real px) */
+		int	paintHead(int screen_x, int screen_y, int screen_w);
 };
 
 #endif /* _SCRIPTCOVERFLOW_H */

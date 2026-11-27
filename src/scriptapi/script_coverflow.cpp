@@ -27,6 +27,7 @@
 #include <driver/neutrinofonts.h>
 #include <driver/fontrenderer.h>
 #include <system/debug.h>
+#include <system/helpers.h>
 
 ScriptCoverFlow::ScriptCoverFlow(const params_t &pars)
 {
@@ -34,6 +35,8 @@ ScriptCoverFlow::ScriptCoverFlow(const params_t &pars)
 	width     = pars.width > 0 ? pars.width : COVERFLOW_DEFAULT_WIDTH;
 	max_lines = pars.max_lines > 0 ? pars.max_lines : COVERFLOW_MAX_LINES;
 	pic_max_h = pars.pic_max_h > 0 ? pars.pic_max_h : COVERFLOW_PIC_MAX_HEIGHT;
+	title = pars.title;
+	head = NULL;
 	active_idx = 0;
 	last_dir = 1;
 }
@@ -59,6 +62,43 @@ void ScriptCoverFlow::hide(void)
 		delete shown[i];
 	}
 	shown.clear();
+	/* the bar was painted first, so it is put back last */
+	if (head) {
+		head->hide();
+		delete head;
+		head = NULL;
+	}
+}
+
+/* The bar above the cards: the title on the left, where the menu stands in
+ * its list ("37/100") on the right, so a long list can be found one's way
+ * through. It saves what is behind it, the text is drawn into it, so its
+ * hide() takes both away. */
+int ScriptCoverFlow::paintHead(int screen_x, int screen_y, int screen_w)
+{
+	Font *font = g_Font[SNeutrinoSettings::FONT_TYPE_MENU_TITLE];
+	if (!font)
+		return screen_y;
+	CFrameBuffer *fb = CFrameBuffer::getInstance();
+	const int margin = fb->scale2Res(10);
+	const int h = font->getHeight() + fb->scale2Res(4);
+
+	head = new CComponentsText(screen_x, screen_y, screen_w, h, "", CTextBox::NO_AUTO_LINEBREAK, font,
+			CComponentsText::FONT_STYLE_REGULAR, NULL, CC_SHADOW_OFF,
+			COL_MENUHEAD_TEXT, COL_FRAME_PLUS_0, COL_MENUHEAD_PLUS_0);
+	head->setCorner(RADIUS_LARGE, CORNER_ALL);
+	head->paint(CC_SAVE_SCREEN_YES);
+
+	const std::string pos = to_string(active_idx + 1) + "/" + to_string((int)cards.size());
+	const int pos_w = font->getRenderWidth(pos);
+	const int text_y = screen_y + (h + font->getHeight()) / 2;
+	font->RenderString(screen_x + screen_w - margin - pos_w, text_y, pos_w, pos, COL_MENUHEAD_TEXT);
+	if (!title.empty()) {
+		const int title_w = screen_w - 3 * margin - pos_w;
+		if (title_w > 0)
+			font->RenderString(screen_x + margin, text_y, title_w, title, COL_MENUHEAD_TEXT);
+	}
+	return screen_y + h;
 }
 
 int ScriptCoverFlow::getActive()
@@ -110,6 +150,10 @@ void ScriptCoverFlow::render(int active)
 			font_side = *f;
 	}
 
+	/* the bar first: the cards below it, centred in what is left */
+	const int top = paintHead(screen_x, screen_y, screen_w) + gap;
+	const int avail_h = screen_h - (top - screen_y);
+
 	const int real_mid = fb->scale2Res(w_mid);
 	const int center_x = screen_x + (screen_w - real_mid) / 2;
 
@@ -139,8 +183,8 @@ void ScriptCoverFlow::render(int active)
 			}
 		}
 
-		/* the cards are centred on each other, and none above the screen */
-		int y = std::max(screen_y, screen_y + (screen_h - cf->getHeight()) / 2);
+		/* the cards are centred on each other, and none above the bar */
+		int y = std::max(top, top + (avail_h - cf->getHeight()) / 2);
 		cf->setXPos(x);
 		cf->setYPos(y);
 		cf->paint();
@@ -194,6 +238,15 @@ int ScriptCoverFlow::exec(int timeout)
 			if (next >= 0 && next < (int)cards.size())
 				render(next);
 			/* the timeout counts idle time: a key starts it again */
+			if (timeout > 0)
+				timeoutEnd = CRCInput::calcTimeoutEnd(timeout);
+		} else if (msg == CRCInput::RC_up || msg == CRCInput::RC_down ||
+			   msg == CRCInput::RC_page_up || msg == CRCInput::RC_page_down) {
+			/* ten at a time through a long list, stopping at its ends */
+			const int step = (msg == CRCInput::RC_up || msg == CRCInput::RC_page_up) ? -10 : 10;
+			const int next = std::max(0, std::min((int)cards.size() - 1, active_idx + step));
+			if (next != active_idx)
+				render(next);
 			if (timeout > 0)
 				timeoutEnd = CRCInput::calcTimeoutEnd(timeout);
 		} else if ((msg == CRCInput::RC_next) || (msg == CRCInput::RC_prev)) {

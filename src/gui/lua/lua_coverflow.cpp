@@ -86,6 +86,8 @@ int CLuaInstCoverFlow::CoverFlowNew(lua_State *L)
 	tableLookup(L, "pic_max_h", pic_max_h);
 	pars.pic_max_h = (int)pic_max_h;
 
+	tableLookup(L, "title", pars.title);   /* the bar above the cards, optional */
+
 	/* the cards of the menu: a list of tables with image and text */
 	lua_getfield(L, 1, "cards");
 	if (!lua_istable(L, -1)) {
