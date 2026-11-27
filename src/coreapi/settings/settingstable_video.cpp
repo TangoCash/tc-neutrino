@@ -422,6 +422,23 @@ constexpr Descriptor kVideo[] =
 		.defaultValue(0)
 		.changeableWhen(kCecOn)
 		.field(COREAPI_NUMBER_FIELD_ON(hdmi_cec_standby, canCec, NULL)),
+	// What the box does when the television changes its input, read when it does.
+	boolRow("hdmi_cec_wakeup")
+		.section("video")
+		.group(&kVideoCec)
+		.label("videomenu.hdmi_cec_wakeup")
+		.hint("menu.hint_cec_wakeup")
+		.defaultValue(0)
+		.changeableWhen(kCecOn)
+		.field(COREAPI_NUMBER_FIELD_ON(hdmi_cec_wakeup, canCec, NULL)),
+	boolRow("hdmi_cec_sleep")
+		.section("video")
+		.group(&kVideoCec)
+		.label("videomenu.hdmi_cec_sleep")
+		.hint("menu.hint_cec_sleep")
+		.defaultValue(0)
+		.changeableWhen(kCecOn)
+		.field(COREAPI_NUMBER_FIELD_ON(hdmi_cec_sleep, canCec, NULL)),
 	enumRow("hdmi_cec_volume")
 		.section("video")
 		.group(&kVideoCec)

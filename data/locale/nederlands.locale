@@ -1412,9 +1412,11 @@ menu.hint_cache_txt Start teletekst gegevens tijdelijk opslaan (cache) na het sc
 menu.hint_camd_control (((T))) Softcams und Emulatoren\nStart, Stopp, Versionsinfo
 menu.hint_camd_reset (((T))) Aktive Softcam und/oder Emulator neu starten
 menu.hint_cec_mode CEC mode
+menu.hint_cec_sleep (((T))) Die Box geht in Standby, wenn der Fernseher auf einen anderen Eingang umschaltet oder sich ausschaltet
 menu.hint_cec_standby CEC stand-by
 menu.hint_cec_view_on CEC view ingeschakeld
 menu.hint_cec_volume (((T))) Beim Betätigen der Lautstärketasten wird die Lautstärke am angeschlossenen Audiogerät reguliert
+menu.hint_cec_wakeup (((T))) Die Box wacht auf, wenn der Fernseher auf ihren Eingang umschaltet oder seine Power-Taste gedrückt wird
 menu.hint_channellist_additional Extra informatie weergeven in hoofdvenster
 menu.hint_channellist_enablesdt (((T))) Ermöglicht die dynamische Senderaktualisierung im laufenden Betrieb
 menu.hint_channellist_epg_align EPG evenement uitlijnen
@@ -3125,12 +3127,14 @@ videomenu.hdmi_cec_mode Gebruik ontvanger
 videomenu.hdmi_cec_mode_off nee
 videomenu.hdmi_cec_mode_recorder als satelliet / kabel PVR
 videomenu.hdmi_cec_mode_tuner als satelliet / kabel ontvanger
+videomenu.hdmi_cec_sleep (((T))) Standby bei Eingangswechsel am TV
 videomenu.hdmi_cec_standby CEC stand-by inschakelen
 videomenu.hdmi_cec_view_on CEC View inschakelen
 videomenu.hdmi_cec_vol_audiosystem (((T))) Audiosystem
 videomenu.hdmi_cec_vol_off (((T))) aus
 videomenu.hdmi_cec_vol_tv (((T))) TV
 videomenu.hdmi_cec_volume (((T))) CEC Lautstärke Regelung
+videomenu.hdmi_cec_wakeup (((T))) Aufwachen bei Eingangswahl am TV
 videomenu.hdmi_colorimetry (((T))) Farbprofil
 videomenu.hdmi_colorimetry_auto (((T))) auto
 videomenu.hdmi_colorimetry_bt2020cl (((T))) BT 2020 cl

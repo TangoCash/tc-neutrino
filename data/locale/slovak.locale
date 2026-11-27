@@ -1412,9 +1412,11 @@ menu.hint_cache_txt Spustenie vyrovnávacej pamäte teletextu po prepnutí kaná
 menu.hint_camd_control Softcam/Nastavenie emulátora\nŠtart/Stop/Verzia
 menu.hint_camd_reset Reštartovanie aktívneho softcamu/emulátora
 menu.hint_cec_mode CEC režim
+menu.hint_cec_sleep (((T))) Die Box geht in Standby, wenn der Fernseher auf einen anderen Eingang umschaltet oder sich ausschaltet
 menu.hint_cec_standby Ovládanie externými CEC príkazmi v pohotovostnom režime
 menu.hint_cec_view_on Ovládanie externými CEC príkazmi pri sledovaní TV
 menu.hint_cec_volume Stlačením tlačidiel hlasitosti nastavíte hlasitosť pripojeného zvukového zariadenia
+menu.hint_cec_wakeup (((T))) Die Box wacht auf, wenn der Fernseher auf ihren Eingang umschaltet oder seine Power-Taste gedrückt wird
 menu.hint_channellist_additional Zobrazenie doplnkových informácií\nv hlavnom okne
 menu.hint_channellist_enablesdt Povolí dynamické aktualizácie kanálov počas prevádzky
 menu.hint_channellist_epg_align Zarovnanie EPG udalostí
@@ -3125,12 +3127,14 @@ videomenu.hdmi_cec_mode Režim HDMI-CEC
 videomenu.hdmi_cec_mode_off vyp
 videomenu.hdmi_cec_mode_recorder ako DVB-S/DVB-C rekordér
 videomenu.hdmi_cec_mode_tuner ako DVB-S/DVB-C prijímač
+videomenu.hdmi_cec_sleep (((T))) Standby bei Eingangswechsel am TV
 videomenu.hdmi_cec_standby Použiť CEC v pohotovostnom režime
 videomenu.hdmi_cec_view_on Použiť CEC pri sledovaní TV
 videomenu.hdmi_cec_vol_audiosystem Zvuková aparatúra
 videomenu.hdmi_cec_vol_off vyp
 videomenu.hdmi_cec_vol_tv TV
 videomenu.hdmi_cec_volume Použiť CEC ovládanie hlasitosti
+videomenu.hdmi_cec_wakeup (((T))) Aufwachen bei Eingangswahl am TV
 videomenu.hdmi_colorimetry Profil farby
 videomenu.hdmi_colorimetry_auto automaticky
 videomenu.hdmi_colorimetry_bt2020cl BT 2020 CL

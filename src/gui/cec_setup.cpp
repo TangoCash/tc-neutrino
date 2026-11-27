@@ -81,6 +81,8 @@ int CCECSetup::showMenu()
 	// Offered while the mode is not off: the row's condition says so.
 	addSetting(cec, "hdmi_cec_view_on");
 	addSetting(cec, "hdmi_cec_standby");
+	addSetting(cec, "hdmi_cec_wakeup");
+	addSetting(cec, "hdmi_cec_sleep");
 #if HAVE_ARM_HARDWARE || HAVE_MIPS_HARDWARE
 	addSetting(cec, "hdmi_cec_volume");
 #endif

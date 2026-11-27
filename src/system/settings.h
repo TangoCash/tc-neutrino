@@ -471,6 +471,8 @@ struct SNeutrinoSettings
 	int hdmi_cec_mode;
 	int hdmi_cec_view_on;
 	int hdmi_cec_standby;
+	int hdmi_cec_wakeup;	// the television switching to the box wakes it
+	int hdmi_cec_sleep;	// the television switching away or going to standby puts the box to sleep
 	int hdmi_cec_volume;
 
 	// volume

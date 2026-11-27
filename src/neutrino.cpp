@@ -536,6 +536,8 @@ int CNeutrinoApp::loadSetup(const char *fname)
 	g_settings.hdmi_cec_mode = configfile.getInt32("hdmi_cec_mode", 0);
 	g_settings.hdmi_cec_view_on = configfile.getInt32("hdmi_cec_view_on", 0);
 	g_settings.hdmi_cec_standby = configfile.getInt32("hdmi_cec_standby", 0);
+	g_settings.hdmi_cec_wakeup = configfile.getInt32("hdmi_cec_wakeup", 0);
+	g_settings.hdmi_cec_sleep = configfile.getInt32("hdmi_cec_sleep", 0);
 	g_settings.hdmi_cec_volume = configfile.getInt32("hdmi_cec_volume", 0);
 
 	// volume
@@ -1724,6 +1726,8 @@ void CNeutrinoApp::saveSetup(const char *fname)
 	configfile.setInt32("hdmi_cec_mode", g_settings.hdmi_cec_mode);
 	configfile.setInt32("hdmi_cec_view_on", g_settings.hdmi_cec_view_on);
 	configfile.setInt32("hdmi_cec_standby", g_settings.hdmi_cec_standby);
+	configfile.setInt32("hdmi_cec_wakeup", g_settings.hdmi_cec_wakeup);
+	configfile.setInt32("hdmi_cec_sleep", g_settings.hdmi_cec_sleep);
 	configfile.setInt32("hdmi_cec_volume", g_settings.hdmi_cec_volume);
 
 	// volume
@@ -3195,6 +3199,37 @@ static bool saveNeutrinoSettings()
 	return true;
 }
 
+#if HAVE_ARM_HARDWARE || HAVE_MIPS_HARDWARE
+/* What the television asks of the box over CEC (from neutrino-tangos evo). Called
+   on the CEC thread, so it only posts: a standby change that leaves the television
+   as it is, since the television made the change itself. */
+static void cecEvent(int event)
+{
+	if (g_settings.hdmi_cec_mode == VIDEO_HDMI_CEC_MODE_OFF)
+		return;
+	switch (event)
+	{
+		case VIDEO_HDMI_CEC_EVENT_WAKEUP:
+		case VIDEO_HDMI_CEC_EVENT_POWER:
+			if (g_settings.hdmi_cec_wakeup)
+			{
+				printf("[neutrino] CEC: the television asks to wake up (event %d)\n", event);
+				coreapi::system::standby(false, false);
+			}
+			break;
+		case VIDEO_HDMI_CEC_EVENT_SLEEP:
+			if (g_settings.hdmi_cec_sleep)
+			{
+				printf("[neutrino] CEC: the television switched away, going to standby\n");
+				coreapi::system::standby(true, false);
+			}
+			break;
+		default:
+			break;
+	}
+}
+#endif
+
 /* Start progress (as in neutrino-tangos evo): a progress window over the start
    logo, and one log line per step with the time since the start and the time
    the previous step took, so a slow start shows where it spends the time. */
@@ -3364,6 +3399,10 @@ TIMER_START();
 	   screen did before, ahead of the small picture's place and the main picture
 	   going back to full screen. */
 	coreapi::runPhase(coreapi::ApplyPhase::Decoders);
+#if HAVE_ARM_HARDWARE || HAVE_MIPS_HARDWARE
+	// before the CEC link starts in the zapit phase
+	videoDecoder->SetCECEventCallback(cecEvent);
+#endif
 #if ENABLE_PIP
 	if (pipVideoDecoder[0] != NULL)
 		pipVideoDecoder[0]->Pig(pip_recalc_pos_x(g_settings.pip_x), pip_recalc_pos_y(g_settings.pip_y), g_settings.pip_width, g_settings.pip_height, g_settings.screen_width, g_settings.screen_height);

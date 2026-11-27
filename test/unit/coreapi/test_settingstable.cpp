@@ -395,7 +395,7 @@ TEST_CASE("every heading a row stands under is one of its section, in a place of
 
 TEST_CASE("the HDMI-CEC rows stand under one heading and the picture's own rows under none", "[settingstable]")
 {
-	const char *const cec[] = { "hdmi_cec_mode", "hdmi_cec_view_on", "hdmi_cec_standby", "hdmi_cec_volume" };
+	const char *const cec[] = { "hdmi_cec_mode", "hdmi_cec_view_on", "hdmi_cec_standby", "hdmi_cec_wakeup", "hdmi_cec_sleep", "hdmi_cec_volume" };
 	for (size_t i = 0; i < sizeof(cec) / sizeof(cec[0]); ++i)
 	{
 		INFO(cec[i]);

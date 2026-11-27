@@ -508,6 +508,8 @@ TEST_CASE("each shipped row behind a capability is offered only where the box ha
 		{ "hdmi_cec_mode", &BoxCapabilities::can_cec },
 		{ "hdmi_cec_view_on", &BoxCapabilities::can_cec },
 		{ "hdmi_cec_standby", &BoxCapabilities::can_cec },
+		{ "hdmi_cec_wakeup", &BoxCapabilities::can_cec },
+		{ "hdmi_cec_sleep", &BoxCapabilities::can_cec },
 		{ "hdmi_cec_volume", &BoxCapabilities::can_cec },
 		{ "lcd_dim_brightness", &BoxCapabilities::display_can_set_brightness },
 		{ "lcd_dim_time", &BoxCapabilities::display_can_set_brightness },
