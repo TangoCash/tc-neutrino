@@ -75,6 +75,7 @@ class ScriptCoverFlow
 		std::vector<card_t>	cards;
 		int	width, max_lines, pic_max_h;
 		int	active_idx;   /* the card in the middle, from zero */
+		int	last_dir;     /* the direction of the last move: +1 right, -1 left */
 		std::vector<CCoverFlow*>	shown;  /* the cards on screen now */
 
 		void	render(int active);

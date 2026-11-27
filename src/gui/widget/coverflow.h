@@ -75,11 +75,19 @@ class CCoverFlow : public CComponentsInfoBox
 		///property: path or icon name of the cover image on top
 		std::string cf_image;
 
-		///object: picture object for the cover image, see paint()
-		CComponentsPicture *cf_pic;
+		///status: file of the cover image, resolved from cf_image by layout()
+		std::string cf_image_path;
+
+		///status: the cover image scaled to cf_pic_w x cf_pic_h, made on the first paint and kept, see paint()
+		fb_pixel_t *cf_pic_buf;
 
 		///status: display text truncated to cf_max_lines lines by layout(), used in paint()
 		std::string cf_text;
+
+		///status: what cf_text was cut from (text, width, lines, font), so layout() cuts it again only when one changed
+		std::string cf_text_src;
+		int cf_text_w, cf_text_lines;
+		Font *cf_text_font;
 
 		///status: calculated size of the scaled cover image, see layout()
 		int cf_pic_w, cf_pic_h;
@@ -167,6 +175,21 @@ class CCoverFlow : public CComponentsInfoBox
 		 * Paint the coverflow card on screen, see CComponentsInfoBox::paint()
 		 */
 		virtual void paint(const bool &do_save_bg = CC_SAVE_SCREEN_YES);
+
+		/**
+		 * Let go of the decoded cover images all cards share. Their sizes and
+		 * the pictures decoded last are kept between cards, so that a picture
+		 * is read from its file once; whoever shows cards calls this when it
+		 * is done with them.
+		 */
+		static void clearImageCache();
+
+		/**
+		 * Decode the cover image of this card into the shared cache without
+		 * painting anything, so that a card painted later with this picture
+		 * only scales it.
+		 */
+		void preload();
 };
 
 #endif

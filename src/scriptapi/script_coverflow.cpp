@@ -35,11 +35,13 @@ ScriptCoverFlow::ScriptCoverFlow(const params_t &pars)
 	max_lines = pars.max_lines > 0 ? pars.max_lines : COVERFLOW_MAX_LINES;
 	pic_max_h = pars.pic_max_h > 0 ? pars.pic_max_h : COVERFLOW_PIC_MAX_HEIGHT;
 	active_idx = 0;
+	last_dir = 1;
 }
 
 ScriptCoverFlow::~ScriptCoverFlow()
 {
 	hide();
+	CCoverFlow::clearImageCache();   /* the decoded pictures are needed no longer */
 }
 
 void ScriptCoverFlow::paint(void)
@@ -76,6 +78,8 @@ void ScriptCoverFlow::render(int active)
 
 	if (active < 0 || active >= (int)cards.size())
 		active = 0;
+	if (active != active_idx)
+		last_dir = (active > active_idx) ? 1 : -1;
 	active_idx = active;
 
 	/* The visible area of the screen, in real pixels. The card scales its
@@ -141,6 +145,16 @@ void ScriptCoverFlow::render(int active)
 		cf->setYPos(y);
 		cf->paint();
 		shown.push_back(cf);
+	}
+
+	/* the picture that comes in on the next move the same way is decoded
+	 * now, after this position is on screen, so that move only scales it */
+	const int next = active + 2 * last_dir;
+	if (next >= 0 && next < (int)cards.size() && !cards[next].image.empty()) {
+		CCoverFlow pre(cards[next].image, cards[next].text, w_side, font_side);
+		pre.setTextMaxLines(max_lines);
+		pre.setPicMaxHeight(pic_side);
+		pre.preload();
 	}
 }
 
