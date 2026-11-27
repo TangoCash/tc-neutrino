@@ -10,7 +10,8 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/src/include \
 	@HWLIB_CFLAGS@ \
 	@LUA_CFLAGS@ \
-	@SIGC_CFLAGS@
+	@SIGC_CFLAGS@ \
+	@WEBP_CFLAGS@
 
 noinst_LIBRARIES = libneutrino_pictureviewer.a
 
@@ -20,3 +21,7 @@ libneutrino_pictureviewer_a_SOURCES = \
 	jpeg.cpp \
 	pictureviewer.cpp \
 	png.cpp bmp.cpp svg.cpp
+
+if ENABLE_WEBP
+libneutrino_pictureviewer_a_SOURCES += webp.cpp
+endif

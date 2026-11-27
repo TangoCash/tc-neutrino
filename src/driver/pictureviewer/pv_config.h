@@ -9,3 +9,6 @@
 #define FBV_SUPPORT_GIF
 #define FBV_SUPPORT_CRW
 #define FBV_SUPPORT_SVG
+#ifdef ENABLE_WEBP
+#define FBV_SUPPORT_WEBP
+#endif

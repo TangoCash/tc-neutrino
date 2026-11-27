@@ -204,6 +204,10 @@ if ENABLE_FRIBIDI
 neutrino_LDADD += -lfribidi
 endif
 
+if ENABLE_WEBP
+neutrino_LDADD += @WEBP_LIBS@
+endif
+
 if ENABLE_LUA
 neutrino_LDADD += @LUA_LIBS@
 endif

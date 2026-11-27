@@ -280,6 +280,15 @@ if test -z "$FREETYPE_LIBS" -a -z "$FREETYPE_CFLAGS"; then
 fi
 
 TUXBOX_APPS_LIB_PKGCONFIG(PNG,libpng)
+
+# WebP pictures in the picture viewer, where libwebp is there
+PKG_CHECK_MODULES([WEBP], [libwebp], [
+	AC_DEFINE(ENABLE_WEBP, 1, [decode WebP pictures with libwebp])
+	enable_webp=yes
+], [
+	enable_webp=no
+])
+AM_CONDITIONAL(ENABLE_WEBP, test "$enable_webp" = "yes")
 TUXBOX_APPS_LIB_PKGCONFIG(AVFORMAT,libavformat)
 TUXBOX_APPS_LIB_PKGCONFIG(AVCODEC,libavcodec)
 TUXBOX_APPS_LIB_PKGCONFIG(AVUTIL,libavutil)

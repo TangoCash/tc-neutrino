@@ -50,6 +50,12 @@ extern int fh_svg_load (const char *, unsigned char **, int *, int *);
 extern int svg_load_resize(const char *name, unsigned char **buffer, int* ox, int* oy, int dx, int dy);
 extern int fh_svg_id (const char *);
 #endif
+#ifdef FBV_SUPPORT_WEBP
+extern int fh_webp_getsize (const char *, int *, int *, int, int);
+extern int fh_webp_load (const char *, unsigned char **, int *, int *);
+extern int webp_load_ext (const char * name, unsigned char ** buffer, int * xp, int * yp, int * bpp);
+extern int fh_webp_id (const char *);
+#endif
 double CPictureViewer::m_aspect_ratio_correction;
 
 void CPictureViewer::add_format (int (*picsize) (const char *, int *, int *, int, int), int (*picread) (const char *, unsigned char **, int *, int *), int (*id) (const char *))
@@ -86,6 +92,9 @@ void CPictureViewer::getSupportedImageFormats(std::vector<std::string>& exts)
 #ifdef FBV_SUPPORT_SVG
 	exts.push_back(".svg");
 #endif
+#ifdef FBV_SUPPORT_WEBP
+	exts.push_back(".webp");
+#endif
 }
 
 void CPictureViewer::init_handlers (void)
@@ -107,6 +116,9 @@ void CPictureViewer::init_handlers (void)
 #endif
 #ifdef FBV_SUPPORT_SVG
   add_format (fh_svg_getsize, fh_svg_load, fh_svg_id);
+#endif
+#ifdef FBV_SUPPORT_WEBP
+  add_format (fh_webp_getsize, fh_webp_load, fh_webp_id);
 #endif
 }
 
@@ -901,6 +913,12 @@ fb_pixel_t * CPictureViewer::int_getImage(const std::string & name, int *width, 
 #ifdef FBV_SUPPORT_PNG
 		if ((name.find(".png") == (name.length() - 4)) && (fh_png_id(name.c_str())))
 			load_ret = png_load_ext(name.c_str(), &buffer, &x, &y, &bpp);
+		else
+#endif
+#ifdef FBV_SUPPORT_WEBP
+		/* known by its content, whatever the name: RGBA where it has alpha */
+		if (fh_webp_id(name.c_str()))
+			load_ret = webp_load_ext(name.c_str(), &buffer, &x, &y, &bpp);
 		else
 #endif
 			load_ret = fh->get_pic(name.c_str (), &buffer, &x, &y);
