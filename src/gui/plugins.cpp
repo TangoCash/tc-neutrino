@@ -120,7 +120,7 @@ void CPlugins::scanDir(const char *dir)
 			if (plugin_ok)
 			{
 				new_plugin.pluginfile = fname;
-				if (new_plugin.type == CPlugins::P_TYPE_SCRIPT)
+				if (new_plugin.type == CPlugins::P_TYPE_SHELL)
 					new_plugin.pluginfile.append(".sh");
 				else if (new_plugin.type == CPlugins::P_TYPE_LUA)
 					new_plugin.pluginfile.append(".lua");
@@ -313,7 +313,7 @@ bool CPlugins::parseCfg(plugin *plugin_data)
 	overrideType(plugin_data, settingsText(g_settings.plugins_disabled), P_TYPE_DISABLED) ||
 	overrideType(plugin_data, settingsText(g_settings.plugins_game), P_TYPE_GAME) ||
 	overrideType(plugin_data, settingsText(g_settings.plugins_tool), P_TYPE_TOOL) ||
-	overrideType(plugin_data, settingsText(g_settings.plugins_script), P_TYPE_SCRIPT) ||
+	overrideType(plugin_data, settingsText(g_settings.plugins_shell), P_TYPE_SHELL) ||
 	overrideType(plugin_data, settingsText(g_settings.plugins_lua), P_TYPE_LUA) ||
 	overrideType(plugin_data, settingsText(g_settings.plugins_python), P_TYPE_PYTHON);
 
@@ -342,7 +342,7 @@ int CPlugins::startPlugin(const char *const filename)
 	return menu_return::RETURN_REPAINT;
 }
 
-int CPlugins::popenScriptPlugin(int number, const char *script)
+int CPlugins::popenShellPlugin(int number, const char *script)
 {
 	pid_t pid = 0;
 	FILE *f = my_popen(pid, script, "r");
@@ -351,7 +351,7 @@ int CPlugins::popenScriptPlugin(int number, const char *script)
 		char *output = NULL;
 		size_t len = 0;
 		while ((getline(&output, &len, f)) != -1)
-			scriptOutput += output;
+			shellOutput += output;
 		pclose(f);
 		int s;
 		while (waitpid(pid, &s, WNOHANG) > 0);
@@ -365,10 +365,10 @@ int CPlugins::popenScriptPlugin(int number, const char *script)
 	return plugin_list[number].menu_return;
 }
 
-int CPlugins::startScriptPlugin(int number)
+int CPlugins::startShellPlugin(int number)
 {
 	const char *script = plugin_list[number].pluginfile.c_str();
-	printf("[CPlugins] executing script %s\n", script);
+	printf("[CPlugins] executing shell script %s\n", script);
 	if (!file_exists(script))
 	{
 		printf("[CPlugins] could not find %s,\nperhaps wrong plugin type in %s\n",
@@ -383,10 +383,10 @@ int CPlugins::startScriptPlugin(int number)
 	{
 		int res = 0;
 		CShellWindow(script, CShellWindow::VERBOSE | CShellWindow::ACKNOWLEDGE, &res);
-		scriptOutput = "";
+		shellOutput = "";
 	}
 	else
-		return popenScriptPlugin(number, script);
+		return popenShellPlugin(number, script);
 
 	return plugin_list[number].menu_return;
 }
@@ -477,7 +477,7 @@ bool CPlugins::startPluginIfIdle(const char *const filename)
 int CPlugins::runPlugin(int number)
 {
 	// always delete old output
-	delScriptOutput();
+	delShellOutput();
 	/* export neutrino settings to the environment */
 	char tmp[32];
 	sprintf(tmp, "%d", g_settings.screen_StartX);
@@ -494,9 +494,9 @@ int CPlugins::runPlugin(int number)
 	if (ispip && !g_RemoteControl->is_video_started)
 		return menu_return::RETURN_REPAINT;
 
-	if (plugin_list[number].type == CPlugins::P_TYPE_SCRIPT)
+	if (plugin_list[number].type == CPlugins::P_TYPE_SHELL)
 	{
-		return startScriptPlugin(number);
+		return startShellPlugin(number);
 	}
 	if (plugin_list[number].type == CPlugins::P_TYPE_LUA)
 	{
@@ -538,24 +538,30 @@ int CPlugins::runPlugin(int number)
 	return plugin_list[number].menu_return;
 }
 
+/*
+ * Whether a CPluginList of this type has anything to show, and so whether the
+ * menu entry that opens it can be selected. The test is the list's own
+ * (pluginlist.cpp): a plugin integrated into another menu is shown there and
+ * not in the list, and counting it here left an entry that opens empty.
+ */
 bool CPlugins::hasPlugin(CPlugins::p_type_t type)
 {
 	for (std::vector<plugin>::iterator it = plugin_list.begin(); it != plugin_list.end(); ++it)
 	{
-		if ((it->type & type) && !it->hide)
+		if ((it->type & type) && !it->hide && it->integration == PLUGIN_INTEGRATION_DISABLED)
 			return true;
 	}
 	return false;
 }
 
-const std::string &CPlugins::getScriptOutput() const
+const std::string &CPlugins::getShellOutput() const
 {
-	return scriptOutput;
+	return shellOutput;
 }
 
-void CPlugins::delScriptOutput()
+void CPlugins::delShellOutput()
 {
-	scriptOutput.clear();
+	shellOutput.clear();
 }
 
 CPlugins::p_type_t CPlugins::getPluginType(int type)
@@ -571,8 +577,8 @@ CPlugins::p_type_t CPlugins::getPluginType(int type)
 		case PLUGIN_TYPE_TOOL:
 			return P_TYPE_TOOL;
 			break;
-		case PLUGIN_TYPE_SCRIPT:
-			return P_TYPE_SCRIPT;
+		case PLUGIN_TYPE_SHELL:
+			return P_TYPE_SHELL;
 			break;
 		case PLUGIN_TYPE_LUA:
 			return P_TYPE_LUA;

@@ -42,10 +42,11 @@ class CPlugins
 			P_TYPE_DISABLED	= 0x1,
 			P_TYPE_GAME	= 0x2,
 			P_TYPE_TOOL	= 0x4,
-			P_TYPE_SCRIPT	= 0x8,
+			P_TYPE_SHELL	= 0x8,
 			P_TYPE_LUA	= 0x10,
 			P_TYPE_PYTHON	= 0x20,
-			P_TYPE_NO_GAME	= P_TYPE_TOOL | P_TYPE_SCRIPT | P_TYPE_LUA | P_TYPE_PYTHON
+			P_TYPE_SCRIPTAPI	= P_TYPE_LUA | P_TYPE_PYTHON,
+			P_TYPE_NO_GAME	= P_TYPE_TOOL | P_TYPE_SHELL | P_TYPE_LUA | P_TYPE_PYTHON
 		}
 		p_type_t;
 
@@ -84,7 +85,7 @@ class CPlugins
 		 * pointer into a string it holds. */
 		OpenThreads::Mutex plugin_list_mutex;
 		std::string plugin_dir;
-		std::string scriptOutput;
+		std::string shellOutput;
 		std::atomic<int> running;	// plugins started and not returned yet
 
 		int runPlugin(int number);
@@ -148,14 +149,14 @@ class CPlugins
 		bool startPluginIfIdle(const char *const filename);
 		int startPlugin(const char *const filename);		// start plugins by filename
 		int startPlugin_by_name(const std::string &name);	// start plugins by "name=" in .cfg
-		int startScriptPlugin(int number);
-		int popenScriptPlugin(int number, const char *script);
+		int startShellPlugin(int number);
+		int popenShellPlugin(int number, const char *script);
 		int startLuaPlugin(int number);
 		int startPythonPlugin(int number);
 		bool hasPlugin(CPlugins::p_type_t type);
 
-		const std::string &getScriptOutput() const;
-		void delScriptOutput();
+		const std::string &getShellOutput() const;
+		void delShellOutput();
 };
 
 #endif

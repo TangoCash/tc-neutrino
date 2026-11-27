@@ -390,7 +390,7 @@ static SNeutrinoSettings::usermenu_t usermenu_default[] = {
 	{ CRCInput::RC_red,             "2,3,4,13,1,23,22",                     "",     "red"           },
 	{ CRCInput::RC_green,           "6",                                    "",     "green"         },
 	{ CRCInput::RC_yellow,          "7,35,freeze",                          "",     "yellow"        },
-	{ CRCInput::RC_blue,            "27,28,21,20,1,39,10,11,24,19,14",      "",     "blue"          },
+	{ CRCInput::RC_blue,            "27,43,21,20,1,39,10,11,24,19,14",      "",     "blue"          },
 #if BOXMODEL_HD51 || BOXMODEL_BRE2ZE4K || BOXMODEL_H7 || BOXMODEL_PROTEK4K || BOXMODEL_HD60 || BOXMODEL_HD61 || BOXMODEL_MULTIBOX || BOXMODEL_MULTIBOXSE
 	{ CRCInput::RC_playpause,       "9",                                    "",     "5"             },
 #else
@@ -1092,7 +1092,7 @@ int CNeutrinoApp::loadSetup(const char *fname)
 	setSettingsText(g_settings.plugins_game, configfile.getString("plugins_game", ""));
 	setSettingsText(g_settings.plugins_lua, configfile.getString("plugins_lua", ""));
 	setSettingsText(g_settings.plugins_python, configfile.getString("plugins_python", ""));
-	setSettingsText(g_settings.plugins_script, configfile.getString("plugins_script", ""));
+	setSettingsText(g_settings.plugins_shell, configfile.getString("plugins_shell", ""));
 	setSettingsText(g_settings.plugins_tool, configfile.getString("plugins_tool", ""));
 
 	// default plugin for movieplayer
@@ -1621,6 +1621,18 @@ void CNeutrinoApp::upgradeSetup(const char * fname)
 	   every list of WebTV sources. They are a switch of their own here,
 	   webtv_xml_mediathek, and off unless it is set; the list stays what
 	   the user entered. */
+	if (g_settings.version_pseudo < "20261126220000")
+	{
+		setSettingsText(g_settings.plugins_shell, configfile.getString("plugins_script", g_settings.plugins_shell));
+		configfile.deleteKey("plugins_script");
+	}
+	if (g_settings.version_pseudo < "20261126223000")
+	{
+		g_settings.personalize[SNeutrinoSettings::P_UMENU_PLUGIN_TYPE_SHELL] = configfile.getInt32("personalize_usermenu_plugin_type_scripts", g_settings.personalize[SNeutrinoSettings::P_UMENU_PLUGIN_TYPE_SHELL]);
+		configfile.deleteKey("personalize_usermenu_plugin_type_scripts");
+		g_settings.personalize[SNeutrinoSettings::P_MAIN_SHELL] = configfile.getInt32("personalize_scripts", g_settings.personalize[SNeutrinoSettings::P_MAIN_SHELL]);
+		configfile.deleteKey("personalize_scripts");
+	}
 
 	setSettingsText(g_settings.version_pseudo, NEUTRINO_VERSION_PSEUDO);
 	configfile.setString("version_pseudo", g_settings.version_pseudo);
@@ -2074,7 +2086,7 @@ void CNeutrinoApp::saveSetup(const char *fname)
 	configfile.setString("plugins_game", g_settings.plugins_game);
 	configfile.setString("plugins_lua", g_settings.plugins_lua);
 	configfile.setString("plugins_python", g_settings.plugins_python);
-	configfile.setString("plugins_script", g_settings.plugins_script);
+	configfile.setString("plugins_shell", g_settings.plugins_shell);
 	configfile.setString("plugins_tool", g_settings.plugins_tool);
 
 	// default plugin for movieplayer
@@ -3722,8 +3734,8 @@ void CNeutrinoApp::RealRun()
 	CPythonServer *pyServer = CPythonServer::getInstance();
 #endif
 	g_Plugins->startPlugin("startup");
-	if (!g_Plugins->getScriptOutput().empty()) {
-		ShowMsg(LOCALE_PLUGINS_RESULT, g_Plugins->getScriptOutput(), CMsgBox::mbrBack, CMsgBox::mbBack, NEUTRINO_ICON_SHELL);
+	if (!g_Plugins->getShellOutput().empty()) {
+		ShowMsg(LOCALE_PLUGINS_RESULT, g_Plugins->getShellOutput(), CMsgBox::mbrBack, CMsgBox::mbBack, NEUTRINO_ICON_SHELL);
 	}
 	g_RCInput->clearRCMsg();
 
@@ -4510,7 +4522,7 @@ coreapi::Status coreapi::boxPlugins(coreapi::PluginList &out)
 			case CPlugins::P_TYPE_DISABLED: one.kind = coreapi::PluginKind::Disabled; break;
 			case CPlugins::P_TYPE_GAME:     one.kind = coreapi::PluginKind::Game; break;
 			case CPlugins::P_TYPE_TOOL:     one.kind = coreapi::PluginKind::Tool; break;
-			case CPlugins::P_TYPE_SCRIPT:   one.kind = coreapi::PluginKind::Script; break;
+			case CPlugins::P_TYPE_SHELL:    one.kind = coreapi::PluginKind::Shell; break;
 			case CPlugins::P_TYPE_LUA:      one.kind = coreapi::PluginKind::Lua; break;
 			case CPlugins::P_TYPE_PYTHON:   one.kind = coreapi::PluginKind::Python; break;
 			default:                        one.kind = coreapi::PluginKind::Unknown; break;
@@ -5453,8 +5465,8 @@ int CNeutrinoApp::handleMsg(const neutrino_msg_t _msg, neutrino_msg_data_t data)
 		 * nested like that can hang the box, so the request is dropped. */
 		if (!g_Plugins->startPluginIfIdle((const char *)data))
 			printf("[neutrino] plugin %s not started: another plugin is running\n", (const char *)data);
-		else if (!g_Plugins->getScriptOutput().empty()) {
-			ShowMsg(LOCALE_PLUGINS_RESULT, g_Plugins->getScriptOutput(), CMsgBox::mbrBack,CMsgBox::mbBack,NEUTRINO_ICON_SHELL);
+		else if (!g_Plugins->getShellOutput().empty()) {
+			ShowMsg(LOCALE_PLUGINS_RESULT, g_Plugins->getShellOutput(), CMsgBox::mbrBack,CMsgBox::mbBack,NEUTRINO_ICON_SHELL);
 		}
 
 		delete[] (unsigned char*) data;

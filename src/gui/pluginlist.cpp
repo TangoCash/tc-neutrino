@@ -63,10 +63,10 @@ CPluginList::CPluginList(const neutrino_locale_t Title, const uint32_t listtype)
 int CPluginList::run()
 {
 	int ret = g_Plugins->startPlugin(number);
-	if (!g_Plugins->getScriptOutput().empty())
+	if (!g_Plugins->getShellOutput().empty())
 	{
 		hide();
-		ShowMsg(LOCALE_PLUGINS_RESULT, g_Plugins->getScriptOutput(), CMsgBox::mbrBack, CMsgBox::mbBack, NEUTRINO_ICON_SHELL, 320, g_settings.timing[SNeutrinoSettings::TIMING_STATIC_MESSAGES]);
+		ShowMsg(LOCALE_PLUGINS_RESULT, g_Plugins->getShellOutput(), CMsgBox::mbrBack, CMsgBox::mbBack, NEUTRINO_ICON_SHELL, 320, g_settings.timing[SNeutrinoSettings::TIMING_STATIC_MESSAGES]);
 	}
 	return ret;
 }
@@ -99,13 +99,39 @@ int CPluginList::exec(CMenuTarget *parent, const std::string &actionKey)
 
 	int nop = g_Plugins->getNumberOfPlugins();
 
+	// Where plugins of more than one kind share a list, the right column says which is which.
+	static const struct { CPlugins::p_type_t type; const char *tag; } kinds[] =
+	{
+		{ CPlugins::P_TYPE_TOOL,	"tool" },
+		{ CPlugins::P_TYPE_SHELL,	"sh" },
+		{ CPlugins::P_TYPE_LUA,		"lua" },
+		{ CPlugins::P_TYPE_PYTHON,	"py" }
+	};
+	int kinds_in_list = 0;
+	for (unsigned int i = 0; i < sizeof(kinds) / sizeof(kinds[0]); i++)
+		if (pluginlisttype & kinds[i].type)
+			kinds_in_list++;
+	bool tag_kind = kinds_in_list > 1;
+
 	for (int count = 0; count < nop; count++)
 	{
 		if ((g_Plugins->getType(count) & pluginlisttype) && !g_Plugins->isHidden(count) && (g_Plugins->getIntegration(count) == PLUGIN_INTEGRATION_DISABLED))
 		{
 			neutrino_msg_t d_key = g_Plugins->getKey(count);
 			keyhelper.get(&key, &dummy, d_key);
-			CMenuForwarder *f = new CMenuForwarder(std::string(g_Plugins->getName(count)), true, NULL, this, to_string(count).c_str(), key);
+			const char *tag = NULL;
+			if (tag_kind)
+			{
+				for (unsigned int i = 0; i < sizeof(kinds) / sizeof(kinds[0]); i++)
+				{
+					if (g_Plugins->getType(count) & kinds[i].type)
+					{
+						tag = kinds[i].tag;
+						break;
+					}
+				}
+			}
+			CMenuForwarder *f = new CMenuForwarder(std::string(g_Plugins->getName(count)), true, tag, this, to_string(count).c_str(), key);
 			f->setHint(g_Plugins->getHintIcon(count), g_Plugins->getDescription(count));
 			m.addItem(f);
 		}
@@ -161,8 +187,8 @@ int CPluginsExec::exec(CMenuTarget *parent, const std::string &actionKey)
 	else if (sel >= 0)
 		ret = g_Plugins->startPlugin(sel);
 
-	if (!g_Plugins->getScriptOutput().empty())
-		ShowMsg(LOCALE_PLUGINS_RESULT, g_Plugins->getScriptOutput(), CMsgBox::mbrBack, CMsgBox::mbBack, NEUTRINO_ICON_SHELL);
+	if (!g_Plugins->getShellOutput().empty())
+		ShowMsg(LOCALE_PLUGINS_RESULT, g_Plugins->getShellOutput(), CMsgBox::mbrBack, CMsgBox::mbBack, NEUTRINO_ICON_SHELL);
 
 	if (g_Plugins->getIntegration(sel) == PLUGIN_INTEGRATION_DISABLED)
 		return menu_return::RETURN_EXIT;

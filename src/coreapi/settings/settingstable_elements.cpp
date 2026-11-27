@@ -229,11 +229,11 @@ constexpr Descriptor kElements[] =
 		.values(kPersonalizeMode)
 		.field(COREAPI_ELEMENT_FIELD(personalize, SNeutrinoSettings::P_MAIN_AVINPUT_PIP)),
 #endif
-	enumRow("personalize_scripts")
+	enumRow("personalize_shell")
 		.section("misc")
 		.defaultValue(0)
 		.values(kPersonalizeMode)
-		.field(COREAPI_ELEMENT_FIELD(personalize, SNeutrinoSettings::P_MAIN_SCRIPTS)),
+		.field(COREAPI_ELEMENT_FIELD(personalize, SNeutrinoSettings::P_MAIN_SHELL)),
 	enumRow("personalize_lua")
 		.section("misc")
 		.defaultValue(0)
@@ -498,30 +498,30 @@ constexpr Descriptor kElements[] =
 	boolRow("personalize_usermenu_plugin_type_games")
 		.section("misc")
 		.group(&kMiscPluginTypes)
-		.label("mainmenu.games")
+		.label("mainmenu.plugins_games")
 		.defaultValue(0)
 		.field(COREAPI_ELEMENT_FIELD(personalize, SNeutrinoSettings::P_UMENU_PLUGIN_TYPE_GAMES)),
 	boolRow("personalize_usermenu_plugin_type_tools")
 		.section("misc")
 		.group(&kMiscPluginTypes)
-		.label("mainmenu.tools")
+		.label("mainmenu.plugins_tools")
 		.defaultValue(1)
 		.field(COREAPI_ELEMENT_FIELD(personalize, SNeutrinoSettings::P_UMENU_PLUGIN_TYPE_TOOLS)),
-	boolRow("personalize_usermenu_plugin_type_scripts")
+	boolRow("personalize_usermenu_plugin_type_shell")
 		.section("misc")
 		.group(&kMiscPluginTypes)
-		.label("mainmenu.scripts")
+		.label("mainmenu.plugins_shell")
 		.defaultValue(0)
-		.field(COREAPI_ELEMENT_FIELD(personalize, SNeutrinoSettings::P_UMENU_PLUGIN_TYPE_SCRIPTS)),
+		.field(COREAPI_ELEMENT_FIELD(personalize, SNeutrinoSettings::P_UMENU_PLUGIN_TYPE_SHELL)),
 	boolRow("personalize_usermenu_plugin_type_lua")
 		.section("misc")
 		.group(&kMiscPluginTypes)
-		.label("mainmenu.lua")
+		.label("mainmenu.plugins_lua")
 		.defaultValue(1)
 		.field(COREAPI_ELEMENT_FIELD(personalize, SNeutrinoSettings::P_UMENU_PLUGIN_TYPE_LUA)),
 	boolRow("personalize_usermenu_plugin_type_python")
 		.section("misc")
-		.label("mainmenu.python")
+		.label("mainmenu.plugins_python")
 		.defaultValue(1)
 		.field(COREAPI_ELEMENT_FIELD(personalize, SNeutrinoSettings::P_UMENU_PLUGIN_TYPE_PYTHON)),
 	intRow("timing.menu")
