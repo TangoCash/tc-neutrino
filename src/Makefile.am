@@ -92,7 +92,11 @@ endif
 
 # Archives resolve left to right and the dependency is circular: the HTTP
 # layer needs coreapi, coreapi needs the channel, schedule and timer
-# archives. They are therefore named again behind it.
+# archives. They are therefore named again behind it. The gui widget,
+# components and pictureviewer archives are named once more after the script
+# API for the same reason: the coverflow card stands in them, and only the
+# script API asks for it - an archive answers only what something already on
+# the line has asked for.
 #
 # The script API stands behind the bindings, and not in the gui archive that
 # they are read from: a binding asks for the window it makes after that archive
@@ -127,6 +131,9 @@ neutrino_LDADD = \
 	$(LUALIBS) \
 	$(PYTHONLIBS) \
 	scriptapi/libneutrino_scriptapi.a \
+	gui/widget/libneutrino_gui_widget.a \
+	gui/components/libneutrino_gui_components.a \
+	driver/pictureviewer/libneutrino_pictureviewer.a \
 	eitd/libsectionsd.a \
 	gui/volumebar.o \
 	driver/libneutrino_driver.a \

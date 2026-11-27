@@ -26,6 +26,7 @@ libneutrino_gui_python_a_SOURCES = \
 	py_cc_text.cpp \
 	py_cc_window.cpp \
 	py_configfile.cpp \
+	py_coverflow.cpp \
 	py_curl.cpp \
 	py_filehelpers.cpp \
 	py_hint.cpp \

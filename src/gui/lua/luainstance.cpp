@@ -52,6 +52,7 @@
 #include <httpd/hbbtvtoken.h>
 #endif
 #include "../scriptapi/script_video.h"
+#include "lua_coverflow.h"
 #include "lua_curl.h"
 #include "lua_filehelpers.h"
 #include "lua_hint.h"
@@ -419,6 +420,7 @@ void LuaInstRegisterFunctions(lua_State *L, bool fromThreads/*=false*/)
 	CLuaInstCCText::getInstance()->CCTextRegister(L);
 	CLuaInstCCWindow::getInstance()->CCWindowRegister(L);
 	CLuaInstConfigFile::getInstance()->LuaConfigFileRegister(L);
+	CLuaInstCoverFlow::getInstance()->CoverFlowRegister(L);
 	CLuaInstCurl::getInstance()->LuaCurlRegister(L);
 	CLuaInstFileHelpers::getInstance()->LuaFileHelpersRegister(L);
 	CLuaInstHint::getInstance()->HintRegister(L);
