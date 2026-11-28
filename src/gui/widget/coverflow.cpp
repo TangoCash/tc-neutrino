@@ -158,7 +158,13 @@ static const cf_source_t *cf_getSource(const std::string &path, int need_w, int 
 	const int dw = std::max(need_w, static_cast<int>(need_w * f + 0.5f));
 	const int dh = std::max(need_h, static_cast<int>(need_h * f + 0.5f));
 
+	/* a cover is opaque where it has no alpha channel: black in it would
+	   otherwise become transparent (TM_BLACK) and leave holes in a poster
+	   wherever it is black; pictures with alpha keep theirs */
+	CFrameBuffer *fb = CFrameBuffer::getInstance();
+	fb->SetTransparent(CFrameBuffer::TM_NONE);
 	fb_pixel_t *buf = g_PicViewer->getImage(path, dw, dh);
+	fb->SetTransparentDefault();
 	if (!buf)
 		return NULL;
 
